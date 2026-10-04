@@ -10,6 +10,7 @@ const GlobalStyle = createGlobalStyle`
     pointer-events: none;
     margin-left: calc(100vw - 100%);
     margin-right: 0;
+    scroll-padding-top: 76px;
   }
 
   body {
@@ -26,6 +27,7 @@ const GlobalStyle = createGlobalStyle`
 
   a {
     color: var(--foreground-color);
+    pointer-events: auto;
   }
 
   a:hover {

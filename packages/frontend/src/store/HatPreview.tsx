@@ -51,6 +51,7 @@ const PreviewStatus = styled.div`
 const UnavailableMessage = styled.span`
   position: absolute;
   bottom: 0;
+  left: 0;
   width: 100%;
   margin: 0;
   color: #aaa;

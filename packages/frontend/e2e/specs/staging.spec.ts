@@ -114,12 +114,26 @@ describe('staging 3D skyline', () => {
       for (const [width, height] of [
         [1280, 900],
         [390, 844],
-      ]) {
-        await browser.setWindowSize(width as number, height as number);
+      ] as const) {
+        await browser.sendCommand('Emulation.setDeviceMetricsOverride', {
+          width,
+          height,
+          deviceScaleFactor: 1,
+          mobile: width < 600,
+        });
         await BasePage.openStaging('');
         await BasePage.waitForAppReady();
         const viewer = await browser.$('#skyline > iframe');
         await viewer.waitForExist({timeout: 30000});
+        assert.deepStrictEqual(
+          await browser.execute(() => {
+            const frame = document
+              .querySelector('#skyline > iframe')
+              ?.getBoundingClientRect();
+            return [innerWidth, frame?.top, frame?.bottom];
+          }),
+          [width, 0, height]
+        );
         await expect(await browser.$('img#skyline')).not.toExist();
         await expect(viewer).toHaveAttribute(
           'title',
@@ -166,6 +180,7 @@ describe('staging 3D skyline', () => {
       }
     } finally {
       await browser.switchFrame(null);
+      await browser.sendCommand('Emulation.clearDeviceMetricsOverride', {});
       await browser.setWindowSize(1280, 1000);
     }
   });
