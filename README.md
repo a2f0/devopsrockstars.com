@@ -105,6 +105,9 @@ asserts the store and search are hidden; `e2e/specs/staging.spec.ts` runs
 against the staging build on :8082 and exercises them. One run covers both
 environments' feature flags.
 
+`e2e/specs/mobile.spec.ts` covers both environments with Chromium phone viewport
+and touch emulation, including portrait, landscape, and viewport height changes.
+
 Run tests whose names match a pattern
 
 ```shell

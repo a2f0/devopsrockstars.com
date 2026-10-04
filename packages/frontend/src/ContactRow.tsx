@@ -1,37 +1,34 @@
-import React, {useState} from 'react';
-import styled, {css} from 'styled-components';
+import React from 'react';
+import styled from 'styled-components';
 import SVG from './SVG';
 
-interface IRowProps {
-  isActive: boolean;
-}
-
-const Row = styled.div<IRowProps>`
-  pointer-events: auto;
+const Row = styled.a`
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: fit-content;
-  ${({isActive}) =>
-    isActive &&
-    css`
-      .svg {
-        fill: var(--hover-color);
-      }
-    `}
-  ${({isActive}) =>
-    !isActive &&
-    css`
-      .svg {
-        fill: var(--foreground-color);
-      }
-    `}
+  max-width: 100%;
+  min-height: 44px;
+  text-decoration: none;
+
+  .svg {
+    fill: var(--foreground-color);
+  }
+
+  &:hover .svg,
+  &:focus-visible .svg {
+    fill: var(--hover-color);
+  }
 `;
 
-const SvgInline = styled.div`
-  display: inline-block;
+const Icon = styled.span`
+  display: flex;
+  flex-shrink: 0;
 `;
 
-const DescriptionInline = styled.div`
-  display: inline-block;
-  margin-left: 10px;
+const Description = styled.span`
+  min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 interface IProps {
@@ -43,31 +40,19 @@ interface IProps {
 }
 
 const ContactRow = React.memo(
-  ({svgWidth, svgHeight, svgPath, rowDescription, uri}: IProps) => {
-    const [isActive, setIsActive] = useState<boolean>(false);
-
-    return (
-      <a href={uri}>
-        <Row
-          onMouseEnter={() => setIsActive(true)}
-          onMouseLeave={() => setIsActive(false)}
-          isActive={isActive}
-        >
-          <SvgInline>
-            <SVG
-              height={svgHeight}
-              width={svgWidth}
-              path={svgPath}
-              initialGrayscale={0}
-            />
-          </SvgInline>
-          <DescriptionInline>
-            <p>{rowDescription}</p>
-          </DescriptionInline>
-        </Row>
-      </a>
-    );
-  }
+  ({svgWidth, svgHeight, svgPath, rowDescription, uri}: IProps) => (
+    <Row href={uri}>
+      <Icon>
+        <SVG
+          height={svgHeight}
+          width={svgWidth}
+          path={svgPath}
+          initialGrayscale={0}
+        />
+      </Icon>
+      <Description>{rowDescription}</Description>
+    </Row>
+  )
 );
 
 export default ContactRow;

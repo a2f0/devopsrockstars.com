@@ -28,6 +28,10 @@ const SearchField = styled.input`
   background-color: #101010;
   color: white;
   appearance: none;
+  min-height: 44px;
+  padding: 10px 11px;
+  font: inherit;
+  font-size: 16px;
 
   &:focus,
   &:active {

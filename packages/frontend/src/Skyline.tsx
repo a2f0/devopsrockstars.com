@@ -9,22 +9,23 @@ const skyline = '/static/image/skyline.svg';
 const FullScreenSkyline = styled.div`
   z-index: -1337;
   position: fixed;
-  left: 0px;
-  right: 0px;
-  width: 100vw;
+  inset: 0;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   align-items: flex-end;
   display: flex;
 `;
 
 const FillContainerImg = styled.img`
   width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: bottom;
   display: block;
 `;
 
 const InteractiveSkyline = styled(FullScreenSkyline)`
-  top: 0;
-  height: 100dvh;
   pointer-events: auto;
 `;
 

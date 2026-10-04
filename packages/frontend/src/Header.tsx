@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useLayoutEffect, useRef} from 'react';
 import {Link} from 'react-router';
 import styled from 'styled-components';
 import {features} from './environment';
@@ -10,17 +10,40 @@ import MenuItemLeft from './styled-components/MenuItemLeft';
 import MenuItemRight from './styled-components/MenuItemRight';
 
 const MenuLink = styled(Link)`
-  font-size: 24px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: clamp(20px, 6vw, 24px);
 `;
 
 const MenuNav = styled.nav`
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 clamp(12px, 3vw, 20px);
 `;
 
 const Header = React.memo(() => {
+  const header = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const element = header.current;
+    if (!element) return;
+    const updateHeight = () =>
+      document.documentElement.style.setProperty(
+        '--header-height',
+        `${element.getBoundingClientRect().height}px`
+      );
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--header-height');
+    };
+  }, []);
+
   return (
-    <FlexHeader>
+    <FlexHeader ref={header}>
       <FlexContainerRow>
         <FlexContainerLeft>
           <MenuItemLeft />

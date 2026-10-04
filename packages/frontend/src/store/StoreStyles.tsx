@@ -5,6 +5,7 @@ export const StoreShell = styled.section`
   width: 100%;
   padding: 8px 0 48px;
   pointer-events: auto;
+  overflow-wrap: anywhere;
 `;
 
 // The store page centers its whole column; checkout and the receipt stay
@@ -91,7 +92,8 @@ const controlStyles = `
   background: #080808;
   color: white;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
+  min-height: 44px;
   padding: 10px 11px;
   pointer-events: auto;
 
@@ -216,6 +218,8 @@ export const SizeList = styled.div`
 
 export const SizeOption = styled.div<{$active: boolean}>`
   position: relative;
+  box-sizing: border-box;
+  min-height: 44px;
   padding: 9px 11px;
   background: ${({$active}) => ($active ? '#1a1a1a' : '#080808')};
   cursor: pointer;
@@ -234,7 +238,7 @@ export const SizeOption = styled.div<{$active: boolean}>`
 `;
 
 export const Button = styled.button`
-  min-height: 42px;
+  min-height: 44px;
   border: 1px solid #aaa;
   border-radius: 0;
   background: #101010;
@@ -263,7 +267,7 @@ export const AddToCart = styled(Button)`
 `;
 
 export const ActionLink = styled(Link)`
-  min-height: 42px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -294,13 +298,15 @@ export const CartPanel = styled.aside`
 export const CartRow = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 20px;
+  gap: 12px;
   align-items: baseline;
   padding: 8px 0;
   border-bottom: 1px solid #242424;
   font-size: 15px;
 
   button {
+    min-height: 44px;
+    min-width: 44px;
     border: 0;
     background: none;
     color: white;
@@ -357,6 +363,7 @@ export const FullField = styled(Field)`
 export const FormActions = styled.div`
   margin-top: 20px;
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
 `;

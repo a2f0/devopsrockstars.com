@@ -23,11 +23,10 @@ const Footer = React.memo(() => {
       <FlexContainerRow>
         <FlexContainerLeft>
           <MenuItemLeft>
-            <Link to="/">
+            <Link to="/" aria-label="Home">
               <div
                 style={{
                   cursor: 'pointer',
-                  pointerEvents: 'auto',
                   width: '200px',
                 }}
               >

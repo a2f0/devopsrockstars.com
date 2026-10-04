@@ -5,7 +5,7 @@ import styled from 'styled-components';
 const StyledRow = styled.div`
   display: flex;
   justify-content: center;
-  flex-drection: row;
+  flex-direction: row;
   width: 100%;
 `;
 
