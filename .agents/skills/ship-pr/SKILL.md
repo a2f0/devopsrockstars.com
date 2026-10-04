@@ -12,15 +12,18 @@ Preserve unrelated edits and honor requested stopping points such as open-PR
 only, report-only review, or keeping the feature branch.
 
 1. Finish the requested change on a feature branch. Validate it with appropriate
-   project checks and commit only the intended files. If project release policy
-   requires package versions, use its version commands or the agent-tool version
-   helpers with an exact fetched base OID before reviewing.
+   project checks and commit only the intended files.
 2. Determine the current PR's base repository and branch, or the repository's
    default branch when no PR exists. Fetch and pin its exact base. Integrate it
    using the repository's normal workflow, resolving conflicts without losing
-   user work. Review the resulting committed HEAD with an independent reviewer
-   using the bundled cross-agent-review skill. Repair blocking findings and
-   review every changed HEAD again. Review failure blocks shipping.
+   user work. If project policy versions packages, prepare versions against the
+   pinned base after every integration or repair and before each review, using
+   the project's commands or `agent-tool versions prepare <base-oid>`, which
+   commits bumped manifests and the refreshed lockfile.
+   `agent-tool versions resolve-conflicts` resolves conflicts confined to
+   version fields. Review the resulting committed HEAD with an independent
+   reviewer using the bundled cross-agent-review skill. Repair blocking findings
+   and review every changed HEAD again. Review failure blocks shipping.
 3. Push the reviewed HEAD through normal hooks, then verify the pushed SHA still
    equals the reviewed SHA. If a hook changed content or HEAD, review that result.
    Open the PR using the open-pr skill, or update the existing PR as needed.
@@ -29,8 +32,9 @@ only, report-only review, or keeping the feature branch.
    reply in the original threads, and resolve only fully addressed comments.
    Validate, commit, push, and independently review every feedback or CI repair.
    Wait for CI, recheck the live base, PR base branch, and local and remote heads.
-   A changed base requires integration, validation, and another review. Use the
-   squash-merge skill to merge the exact reviewed HEAD.
+   A changed base requires integration, validation, and another review. When
+   versions are managed, `agent-tool versions check <base-oid>` must pass for the
+   live base. Use the squash-merge skill to merge the exact reviewed HEAD.
 5. After confirmed MERGED, honor keep-branch; otherwise use the reset skill to
    return to the updated default branch and apply any documented project setup.
 6. When the project deploys the merged branch, verify the deployment for the
