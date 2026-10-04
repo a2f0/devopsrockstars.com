@@ -207,7 +207,7 @@ describe('search page', () => {
 });
 
 describe('store page', () => {
-  it('reserves, resumes, and polls a checkout with mocked APIs', async () => {
+  it('reserves, resumes, edits, and polls a checkout with mocked APIs', async () => {
     const orderId = '12345678-1234-4234-8234-123456789abc';
     const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
     const fixtures = {
@@ -286,6 +286,25 @@ describe('store page', () => {
             String(calls + 1)
           );
           return Response.json(fixtures.checkout, {status: 201});
+        }
+        if (
+          url.pathname === `/api/orders/${fixtures.orderId}/cancel` &&
+          init?.method === 'POST'
+        ) {
+          const calls = Number(
+            sessionStorage.getItem('__store_test_cancel_calls') ?? '0'
+          );
+          sessionStorage.setItem(
+            '__store_test_cancel_calls',
+            String(calls + 1)
+          );
+          return Response.json({
+            currency: 'usd',
+            expiresAt: fixtures.checkout.expiresAt,
+            orderId: fixtures.orderId,
+            status: 'canceled',
+            totalAmount: 2000,
+          });
         }
         if (url.pathname === `/api/orders/${fixtures.orderId}`) {
           const calls = Number(
@@ -380,7 +399,18 @@ describe('store page', () => {
       await (await browser.$('input[name="postal-code"]')).setValue('10001');
       await (await browser.$('button=Continue to payment')).click();
 
+      const shippingAddress = await browser.$('[data-shipping-address]');
+      const testCalls = () =>
+        browser.execute(() => ({
+          cancel: sessionStorage.getItem('__store_test_cancel_calls'),
+          checkout: sessionStorage.getItem('__store_test_checkout_calls'),
+        }));
       await expect(await browser.$('h2=Payment')).toExist();
+      // The reserved address replaces the form with a compact summary.
+      await expect(shippingAddress).toHaveText(
+        'Grace Hopper\ngrace@example.com\n1 Navy Way\nNew York, NY 10001'
+      );
+      await expect(await browser.$('input[name="name"]')).not.toExist();
       assert.strictEqual(
         await browser.execute(() =>
           sessionStorage.getItem('__store_test_checkout_calls')
@@ -396,14 +426,49 @@ describe('store page', () => {
       await browser.refresh();
       await BasePage.waitForAppReady();
       await expect(await browser.$('h2=Payment')).toExist();
-      await expect(await browser.$('input[name="name"]')).toHaveValue(
-        'Grace Hopper'
-      );
-      assert.strictEqual(
-        await browser.execute(() =>
-          sessionStorage.getItem('__store_test_checkout_calls')
+      await expect(shippingAddress).toHaveText('Grace Hopper', {
+        containing: true,
+      });
+      assert.deepStrictEqual(await testCalls(), {cancel: null, checkout: '1'});
+
+      // Editing reopens the filled form and hides payment. Canceling the edit,
+      // or saving the same address, keeps the reservation.
+      await (await browser.$('button=Edit')).click();
+      const addressLine1 = await browser.$('input[name="address-line1"]');
+      await expect(addressLine1).toHaveValue('1 Navy Way');
+      await expect(await browser.$('input[name="name"]')).toBeFocused();
+      await expect(await browser.$('h2=Payment')).not.toExist();
+      await addressLine1.setValue('2 Navy Way');
+      await (await browser.$('button=Cancel')).click();
+      await expect(shippingAddress).toHaveText('1 Navy Way', {
+        containing: true,
+      });
+      await expect(await browser.$('h2=Payment')).toExist();
+      await (await browser.$('button=Edit')).click();
+      await expect(addressLine1).toHaveValue('1 Navy Way');
+      await (await browser.$('button=Continue to payment')).click();
+      await expect(shippingAddress).toHaveText('1 Navy Way', {
+        containing: true,
+      });
+      assert.deepStrictEqual(await testCalls(), {cancel: null, checkout: '1'});
+
+      // A new address releases the reservation and reserves the cart again.
+      await (await browser.$('button=Edit')).click();
+      await addressLine1.setValue('2 Navy Way');
+      await (await browser.$('input[name="address-line2"]')).setValue('Apt 4');
+      await (await browser.$('button=Continue to payment')).click();
+      await expect(shippingAddress).toHaveText('2 Navy Way, Apt 4', {
+        containing: true,
+      });
+      await expect(await browser.$('h2=Payment')).toExist();
+      assert.deepStrictEqual(await testCalls(), {cancel: '1', checkout: '2'});
+      assert.match(
+        String(
+          await browser.execute(() =>
+            sessionStorage.getItem('devopsrockstars.store.pending-checkout')
+          )
         ),
-        '1'
+        /2 Navy Way/u
       );
 
       await BasePage.openStaging(`store/receipt?order=${orderId}`);
