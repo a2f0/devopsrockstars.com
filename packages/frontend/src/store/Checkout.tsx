@@ -132,10 +132,11 @@ const Checkout = React.memo(() => {
     checkout?.totalAmount ??
     orderLines.reduce((sum, item) => sum + item.unitAmount * item.quantity, 0);
   const currency = checkout?.currency ?? orderLines[0]?.currency ?? 'usd';
-  const checkoutItems = visibleItems.map(item => ({
-    variantId: item.variantId,
-    quantity: item.quantity,
-  }));
+  // A new address reserves the same items again, even if the cart changed
+  // after the first reservation.
+  const checkoutItems = (reservation?.checkout.lines ?? visibleItems).map(
+    item => ({variantId: item.variantId, quantity: item.quantity})
+  );
 
   const update = (field: keyof ShippingInput, value: string) => {
     setShipping(current => ({...current, [field]: value}));
