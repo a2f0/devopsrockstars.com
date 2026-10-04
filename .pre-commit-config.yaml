@@ -14,6 +14,11 @@ repos:
       args: ['--branch', 'production']
 - repo: local
   hooks:
+    - id: check-feature-flags
+      name: check-feature-flags
+      entry: bun run flags:check
+      pass_filenames: false
+      language: system
     - id: check-for-unpinned-dependencies
       name: check-for-unpinned-dependencies
       entry: bun scripts/check-for-unpinned-dependencies.mjs

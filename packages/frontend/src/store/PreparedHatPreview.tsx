@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import {createPortal} from 'react-dom';
-import {features} from '../environment';
+import {features} from '../featureFlags';
 import HatPreview, {type HatPreviewStatus} from './HatPreview';
 
 const PreparationContext = createContext(false);

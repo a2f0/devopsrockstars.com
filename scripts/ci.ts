@@ -1,10 +1,16 @@
 #!/usr/bin/env bun
 import path from 'node:path';
+import {
+  disabledFeatureFlags,
+  featureFlagNames,
+} from '../packages/frontend/src/featureFlags';
 import {startFrontendServer} from '../packages/frontend/tooling/server';
 
 const production = await startFrontendServer({
   port: 8081,
   environment: 'production',
+  // Keep testing both feature states even after the rollout matrix changes.
+  featureFlags: disabledFeatureFlags,
   minify: true,
 });
 let staging: Awaited<ReturnType<typeof startFrontendServer>> | undefined;
@@ -23,6 +29,9 @@ try {
   staging = await startFrontendServer({
     port: 8082,
     environment: 'staging',
+    featureFlags: Object.fromEntries(
+      featureFlagNames.map(name => [name, true])
+    ) as typeof disabledFeatureFlags,
     minify: true,
   });
   tests = Bun.spawn(

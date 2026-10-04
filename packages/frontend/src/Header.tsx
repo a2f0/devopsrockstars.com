@@ -1,7 +1,7 @@
 import React, {useLayoutEffect, useRef} from 'react';
 import {Link} from 'react-router';
 import styled from 'styled-components';
-import {features} from './environment';
+import {features} from './featureFlags';
 import FlexContainerLeft from './styled-components/FlexContainerLeft';
 import FlexContainerRight from './styled-components/FlexContainerRight';
 import FlexContainerRow from './styled-components/FlexContainerRow';

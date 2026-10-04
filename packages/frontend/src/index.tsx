@@ -7,7 +7,7 @@ import {
   useLocation,
 } from 'react-router';
 import Company from './Company';
-import {features} from './environment';
+import {features} from './featureFlags';
 import Footer from './Footer';
 import Header from './Header';
 import FullScreenMap from './Map';
