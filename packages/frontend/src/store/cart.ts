@@ -66,10 +66,15 @@ export function useStoreCart() {
     });
   }, []);
 
+  const replace = useCallback((next: readonly CartItemInput[]) => {
+    writeCart(next);
+    setItems(next);
+  }, []);
+
   const clear = useCallback(() => {
     writeCart([]);
     setItems([]);
   }, []);
 
-  return {items, add, remove, clear};
+  return {items, add, remove, replace, clear};
 }

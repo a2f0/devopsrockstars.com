@@ -482,8 +482,8 @@ describe('store page', () => {
       });
 
       // A new address cancels the order and reserves the same items again
-      // with new credentials, even after the cart changed and the first
-      // replacement attempt failed.
+      // with new credentials, even after the cart changed and a reload
+      // followed a failed replacement attempt.
       await browser.execute(() =>
         sessionStorage.setItem(
           'devopsrockstars.store.cart',
@@ -501,7 +501,12 @@ describe('store page', () => {
           'p=The store is busy. Please try again in a few minutes.'
         )
       ).toExist();
+      await browser.refresh();
+      await BasePage.waitForAppReady();
       await expect(addressLine1).toHaveValue('2 Navy Way');
+      await expect(await browser.$('input[name="address-line2"]')).toHaveValue(
+        'Apt 4'
+      );
       await expect(
         await browser.$('span=DevOps Rockstars 59FIFTY — 7 1/4 × 1')
       ).toExist();
@@ -524,6 +529,7 @@ describe('store page', () => {
               'null'
           ),
           token: sessionStorage.getItem(`devopsrockstars.store.order.${id}`),
+          draft: sessionStorage.getItem('devopsrockstars.store.shipping-draft'),
         }),
         replacementOrderId
       );
@@ -548,6 +554,7 @@ describe('store page', () => {
         'pi_replacement_secret_test'
       );
       assert.strictEqual(replacement.token, 'replacement-token');
+      assert.strictEqual(replacement.draft, null);
 
       await BasePage.openStaging(`store/receipt?order=${replacementOrderId}`);
       await expect(
