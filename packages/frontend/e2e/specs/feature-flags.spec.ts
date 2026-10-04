@@ -19,22 +19,26 @@ describe('independent feature flags', () => {
           featureFlags: flags,
           minify: true,
         });
-        const fixtures = await browser.addInitScript(() => {
-          const originalFetch = globalThis.fetch.bind(globalThis);
-          const browserWindow: Window = window;
-          browserWindow.fetch = async (input, init) => {
-            if (String(input).endsWith('/api/storefront')) {
-              document.documentElement.dataset['storefrontRequested'] = 'true';
-              return Response.json({products: [], stripePublishableKey: ''});
-            }
-            // Rendering quality and recovery have dedicated preview specs.
-            if (String(input).endsWith('/static/image/store/5950.svg')) {
-              throw new Error('No hat model needed for flag routing tests');
-            }
-            return originalFetch(input, init);
-          };
-        });
+        let fixtures:
+          | Awaited<ReturnType<typeof browser.addInitScript>>
+          | undefined;
         try {
+          fixtures = await browser.addInitScript(() => {
+            const originalFetch = globalThis.fetch.bind(globalThis);
+            const browserWindow: Window = window;
+            browserWindow.fetch = async (input, init) => {
+              if (String(input).endsWith('/api/storefront')) {
+                document.documentElement.dataset['storefrontRequested'] =
+                  'true';
+                return Response.json({products: [], stripePublishableKey: ''});
+              }
+              // Rendering quality and recovery have dedicated preview specs.
+              if (String(input).endsWith('/static/image/store/5950.svg')) {
+                throw new Error('No hat model needed for flag routing tests');
+              }
+              return originalFetch(input, init);
+            };
+          });
           const manifest = await fetch(
             new URL('/feature-flags.json', server.url)
           );
@@ -110,9 +114,12 @@ describe('independent feature flags', () => {
             }
           }
         } finally {
-          await browser.url('about:blank');
-          await fixtures.remove();
           server.stop();
+          try {
+            await fixtures?.remove();
+          } finally {
+            await browser.url('about:blank');
+          }
         }
       });
     }
