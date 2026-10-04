@@ -57,6 +57,7 @@ The project `address-gemini-feedback` skill handles review-thread replies;
 Primary checks in this repo:
 
 - `bun run lint:md`
+- `bun run flags:check`
 - `bun run compile`
 - `bun run unit`
 - `bun run ci-headless`
@@ -88,10 +89,10 @@ strict status checks that the merging account cannot bypass.
 
 After merging to `production`, wait for `.github/workflows/main.yml` to deploy
 that merge commit successfully. Smoke-test Home and Company at phone and desktop
-sizes, confirm store and search remain hidden and Home uses the SVG skyline, and
-check the production storefront API returns JSON. For staging, verify
-store/search and the 3D skyline remain available. Mobile browser checks should emulate viewport and touch input,
-including narrow portrait, landscape, and viewport height changes.
+sizes, and verify navigation, routes, and the Home skyline match the committed
+feature flag matrix for each deployed environment. Check the production
+storefront API returns JSON. Mobile browser checks should emulate viewport and
+touch input, including narrow portrait, landscape, and viewport height changes.
 Verify branch identities and merge ancestry before deleting shipped branches.
 
 ## Markdown Linting
@@ -181,7 +182,7 @@ store backend.
 
 - **Frontend**: React 19+ with TypeScript in strict mode
 - **Styling**: styled-components with CSS-in-JS architecture
-- **Routing**: react-router with production routes `/` and `/company` and staging-only store/search routes
+- **Routing**: react-router with `/` and `/company` plus flag-controlled store/search routes
 - **Build**: Bun bundler with ES modules output
 - **Testing**: WebDriverIO (WDIO) for end-to-end testing
 - **Package Manager**: Bun for dependency management
@@ -189,7 +190,7 @@ store backend.
 ### Application Structure
 
 - **Layout**: Flexbox-based layout system using custom styled components
-- **Home**: Original SVG skyline in production; shared interactive 3D skyline in staging
+- **Home**: Original SVG skyline, or shared interactive 3D skyline when `skyline3d` is enabled
 - **Responsive Design**: Component-based responsive layout with flex containers
 
 ### Key Components
@@ -201,7 +202,9 @@ store backend.
 - `packages/frontend/src/Company.tsx` - Company information page
 - `packages/frontend/src/Map.tsx` - Full-screen Leaflet map component
 - `packages/frontend/src/NotFound.tsx` - Catch-all route for unmatched paths
-- `packages/frontend/src/environment.ts` - Per-environment feature flags
+- `feature-flags.json` - Explicit production/staging rollout values
+- `packages/frontend/src/featureFlags.ts` - Typed flag registry and browser values
+- `packages/frontend/src/environment.ts` - Environment parsing and store API origin
 
 ### Styled Components System
 
@@ -278,17 +281,25 @@ D1 database.
 
 ### Environment feature flags
 
-`packages/frontend/src/environment.ts` derives the environment from
-`PUBLIC_ENVIRONMENT`, injected at build time by Bun's `define` option.
+`feature-flags.json` is the versioned rollout matrix. `PUBLIC_ENVIRONMENT`
+selects the row during the build; Bun injects the validated booleans into the
+browser. `bun run flags` shows the matrix and `bun run flags:check` validates it.
+Flag changes require a new deployment. See README's Feature flags section for
+the update workflow and registry conventions.
 
-- The store, search, and 3D skyline remain **staging-only**. Production hides
-  store/search links and routes and keeps the original SVG skyline. The
-  `skyline3d` feature controls the 3D viewer; its assets ship only in staging
-- Staging prepares the hat preview before starting the 3D skyline to avoid
-  competing model builds; the original SVG stays visible during preparation
+- Store/search flags control their links and routes. The `skyline3d` flag
+  controls the 3D viewer and asset inclusion, with the SVG used when off. Each flag is
+  independent; do not couple a flag's value to whether the environment is staging
+- When `store` and `skyline3d` are both on, hat preparation finishes before the
+  skyline starts to avoid competing model builds; the SVG stays visible meanwhile
 - **Staging** adds a `noindex` meta tag, an `X-Robots-Tag` header, and a
   disallow-all `robots.txt`, so only production is indexable
-- The store JavaScript is still present in the production bundle; it simply has
-  no link or route reaching it
+- Disabling the store removes its links and routes; its implementation JavaScript
+  can still be present in the bundle
 - `packages/frontend/buildAssets.ts` generates `robots.txt` and `_headers`;
   both are covered by unit and e2e tests
+- Indexing stays tied to the environment, outside the feature flag registry
+- Each deployment publishes its resolved settings at `/feature-flags.json`;
+  verify that manifest along with the live UI after a rollout
+- CI exercises fixed all-off/all-on browser profiles plus each flag independently
+  in both environments, so coverage survives future changes to the rollout matrix

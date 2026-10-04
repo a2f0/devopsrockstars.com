@@ -1,5 +1,8 @@
 import {afterAll, beforeAll, expect, test} from 'bun:test';
 import {hasAllowedOrigin} from '../../backend/src/http';
+import {siteEnvironments} from '../src/environment';
+import {disabledFeatureFlags, enabledFeatureFlags} from '../src/featureFlags';
+import {loadFeatureFlagConfiguration} from './featureFlags';
 import {startFrontendServer} from './server';
 
 // Use the actual local Worker command's configuration, so a proxy request must
@@ -42,11 +45,13 @@ beforeAll(async () => {
   production = await startFrontendServer({
     port: 0,
     environment: 'production',
+    featureFlags: disabledFeatureFlags,
     apiProxy: upstream.url.href,
   });
   staging = await startFrontendServer({
     port: 0,
     environment: 'staging',
+    featureFlags: enabledFeatureFlags,
     apiProxy: upstream.url.href,
   });
 }, 30000);
@@ -101,27 +106,53 @@ test('static assets have correct MIME types and missing files never become HTML'
   ).toBe(405);
 });
 
-test('only staging serves the complete shared skyline viewer', async () => {
-  for (const pathname of [
-    '/static/skyline/index.html',
-    '/static/skyline/skyline-3d.html',
-    '/static/skyline/skyline-3d.js',
-    '/static/skyline/models/crain-geographic.js',
-    '/static/skyline/vendor/three-r186.js',
-    '/static/skyline/stars.svg',
-  ]) {
-    const response = await fetch(new URL(pathname, staging.url));
-    expect(response.status).toBe(200);
-    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
-    expect((await fetch(new URL(pathname, production.url))).status).toBe(404);
+test('each environment serves skyline assets only when its flag is enabled', async () => {
+  for (const [server, environment, flags] of [
+    [production, 'production', disabledFeatureFlags],
+    [staging, 'staging', enabledFeatureFlags],
+  ] as const) {
+    for (const pathname of [
+      '/static/skyline/index.html',
+      '/static/skyline/skyline-3d.html',
+      '/static/skyline/skyline-3d.js',
+      '/static/skyline/models/crain-geographic.js',
+      '/static/skyline/vendor/three-r186.js',
+      '/static/skyline/stars.svg',
+    ]) {
+      const response = await fetch(new URL(pathname, server.url));
+      expect(response.status).toBe(flags.skyline3d ? 200 : 404);
+      if (flags.skyline3d) {
+        expect(response.headers.has('X-Robots-Tag')).toBe(
+          environment === 'staging'
+        );
+        if (pathname.endsWith('.js'))
+          expect(response.headers.get('Content-Type')).toContain('javascript');
+      }
+    }
   }
-  const module = await fetch(
-    new URL('/static/skyline/skyline-3d.js', staging.url)
-  );
-  expect(module.headers.get('Content-Type')).toContain('javascript');
   expect(
     (await fetch(new URL('/static/skyline/missing.js', staging.url))).status
   ).toBe(404);
+});
+
+test('build manifests expose only the flags resolved for that environment', async () => {
+  const configuration = await loadFeatureFlagConfiguration();
+  for (const environment of siteEnvironments) {
+    const server = await startFrontendServer({port: 0, environment});
+    try {
+      const response = await fetch(new URL('/feature-flags.json', server.url));
+      expect(response.headers.get('Content-Type')).toContain(
+        'application/json'
+      );
+      expect(response.headers.get('Cache-Control')).toContain('no-cache');
+      expect(await response.json()).toEqual({
+        environment,
+        flags: configuration[environment],
+      });
+    } finally {
+      server.stop();
+    }
+  }
 });
 
 test('API proxy preserves method, body, query, response status and headers', async () => {

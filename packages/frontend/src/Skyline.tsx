@@ -1,7 +1,7 @@
 import {mountSkyline} from 'chicago-skyline';
 import React, {useEffect, useRef} from 'react';
 import styled from 'styled-components';
-import {features} from './environment';
+import {features} from './featureFlags';
 import {useHatPreviewPreparing} from './store/PreparedHatPreview';
 
 const skyline = '/static/image/skyline.svg';

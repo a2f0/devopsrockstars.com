@@ -1,20 +1,30 @@
 #!/usr/bin/env bun
 import {watch} from 'node:fs';
 import path from 'node:path';
-import {parseSiteEnvironment, siteFeatures} from '../src/environment';
-import {bundleFrontend, frontendRoot} from './build';
+import {parseSiteEnvironment} from '../src/environment';
+import {bundleFrontend, type FrontendBuildOptions, frontendRoot} from './build';
+import {featureFlagsPath} from './featureFlags';
 
 export async function startFrontendServer({
   port = 8080,
   environment = parseSiteEnvironment(process.env['PUBLIC_ENVIRONMENT']),
+  featureFlags,
   storeApiOrigin = process.env['STORE_API_ORIGIN'] ?? '',
   apiProxy = process.env['STORE_API_PROXY'] ?? 'http://127.0.0.1:8787',
   watchSources = false,
   minify = false,
+}: FrontendBuildOptions & {
+  port?: number;
+  apiProxy?: string;
+  watchSources?: boolean;
 } = {}) {
-  const options = {environment, storeApiOrigin, minify};
+  const options = {
+    environment,
+    storeApiOrigin,
+    minify,
+    ...(featureFlags ? {featureFlags} : {}),
+  };
   let assets = await bundleFrontend(options);
-  const features = siteFeatures(environment);
   const staticRoot = path.join(frontendRoot, 'static');
   const server = Bun.serve({
     hostname: '127.0.0.1',
@@ -84,28 +94,40 @@ export async function startFrontendServer({
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'X-Content-Type-Options': 'nosniff',
       });
-      if (!features.indexable) headers.set('X-Robots-Tag', 'noindex, nofollow');
+      if (environment !== 'production')
+        headers.set('X-Robots-Tag', 'noindex, nofollow');
       return new Response(request.method === 'HEAD' ? null : body, {headers});
     },
   });
   let rebuild = Promise.resolve();
+  const rebuildFrontend = () => {
+    rebuild = rebuild
+      .then(async () => {
+        assets = await bundleFrontend(options);
+        console.log('Frontend rebuilt; refresh the browser to load changes.');
+      })
+      .catch(error => console.error('Frontend rebuild failed:', error));
+  };
   const watchers = watchSources
-    ? ['src', 'static', 'index.html'].map(name =>
-        watch(
-          path.join(frontendRoot, name),
-          {recursive: name !== 'index.html'},
-          () => {
-            rebuild = rebuild
-              .then(async () => {
-                assets = await bundleFrontend(options);
-                console.log(
-                  'Frontend rebuilt; refresh the browser to load changes.'
-                );
-              })
-              .catch(error => console.error('Frontend rebuild failed:', error));
+    ? [
+        ...['src', 'static', 'index.html'].map(name =>
+          watch(
+            path.join(frontendRoot, name),
+            {recursive: name !== 'index.html'},
+            rebuildFrontend
+          )
+        ),
+        // Watch the directory so editors that save by atomic rename do not
+        // detach the configuration watcher after the first edit.
+        watch(path.dirname(featureFlagsPath), (_event, filename) => {
+          if (
+            filename === null ||
+            filename === path.basename(featureFlagsPath)
+          ) {
+            rebuildFrontend();
           }
-        )
-      )
+        }),
+      ]
     : [];
   return {
     url: server.url,

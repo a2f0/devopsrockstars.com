@@ -4,16 +4,29 @@ import os from 'node:os';
 import path from 'node:path';
 import {copySkylineAssets} from 'chicago-skyline/build';
 import {headersFile, robotsMetaTags, robotsTxt} from '../buildAssets';
-import {parseSiteEnvironment, siteFeatures} from '../src/environment';
+import {parseSiteEnvironment, type SiteEnvironment} from '../src/environment';
+import type {FeatureFlags} from '../src/featureFlags';
+import {loadFeatureFlagConfiguration, parseFeatureFlags} from './featureFlags';
 
 export const frontendRoot = path.resolve(import.meta.dir, '..');
 const outputRoot = path.join(frontendRoot, 'build');
 
+export interface FrontendBuildOptions {
+  environment?: SiteEnvironment;
+  featureFlags?: FeatureFlags;
+  storeApiOrigin?: string;
+  minify?: boolean;
+}
+
 export async function bundleFrontend({
   environment = parseSiteEnvironment(process.env['PUBLIC_ENVIRONMENT']),
+  featureFlags,
   storeApiOrigin = process.env['STORE_API_ORIGIN'] ?? '',
   minify = true,
-} = {}) {
+}: FrontendBuildOptions = {}) {
+  const flags = parseFeatureFlags(
+    featureFlags ?? (await loadFeatureFlagConfiguration())[environment]
+  );
   const result = await Bun.build({
     entrypoints: [path.join(frontendRoot, 'src/index.tsx')],
     target: 'browser',
@@ -23,7 +36,7 @@ export async function bundleFrontend({
     minify,
     naming: 'assets/[name]-[hash].[ext]',
     define: {
-      'globalThis.__SITE_ENVIRONMENT__': JSON.stringify(environment),
+      'globalThis.__FEATURE_FLAGS__': JSON.stringify(flags),
       'globalThis.__STORE_API_ORIGIN__': JSON.stringify(storeApiOrigin),
       'process.env.NODE_ENV': JSON.stringify(
         minify ? 'production' : 'development'
@@ -43,8 +56,7 @@ export async function bundleFrontend({
     if (output.kind === 'entry-point') entry = url;
   }
   if (!entry) throw new Error('Frontend build did not emit an entry point');
-  const features = siteFeatures(environment);
-  const meta = Object.entries(robotsMetaTags(features))
+  const meta = Object.entries(robotsMetaTags(environment))
     .map(([name, content]) => `<meta name="${name}" content="${content}" />`)
     .join('\n');
   const template = await Bun.file(path.join(frontendRoot, 'index.html')).text();
@@ -58,13 +70,19 @@ export async function bundleFrontend({
   );
   assets.set(
     '/robots.txt',
-    new Blob([robotsTxt(features)], {type: 'text/plain'})
+    new Blob([robotsTxt(environment)], {type: 'text/plain'})
   );
   assets.set(
     '/_headers',
-    new Blob([headersFile(features)], {type: 'text/plain'})
+    new Blob([headersFile(environment)], {type: 'text/plain'})
   );
-  if (features.skyline3d) {
+  assets.set(
+    '/feature-flags.json',
+    new Blob([`${JSON.stringify({environment, flags}, null, 2)}\n`], {
+      type: 'application/json',
+    })
+  );
+  if (flags.skyline3d) {
     const temporary = await mkdtemp(path.join(os.tmpdir(), 'skyline-assets-'));
     try {
       await copySkylineAssets(temporary);
@@ -103,4 +121,7 @@ if (import.meta.main) {
     recursive: true,
   });
   console.log(`Built ${assets.size} frontend assets in ${outputRoot}`);
+  console.log(
+    `Feature flags: ${await assets.get('/feature-flags.json')?.text()}`
+  );
 }

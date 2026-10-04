@@ -16,6 +16,8 @@
     "ci": "bun scripts/ci.ts",
     "ci-headless": "bun scripts/ci.ts --headless",
     "agent-tool": "agent-tool",
+    "flags": "bun scripts/feature-flags.ts",
+    "flags:check": "bun scripts/feature-flags.ts --check",
     "format": "bun run --bun biome format --write",
     "build": "bun run --filter @devopsrockstars/frontend build",
     "dev:cloudflare": "bun run --filter @devopsrockstars/backend dev",

@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {headersFile, robotsMetaTags, robotsTxt} from './buildAssets';
-import {siteFeatures} from './src/environment';
 
-const production = siteFeatures('production');
-const staging = siteFeatures('staging');
+const production = 'production';
+const staging = 'staging';
 
 test('production invites crawlers', () => {
   assert.deepEqual(robotsMetaTags(production), {});
