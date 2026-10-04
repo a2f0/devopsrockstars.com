@@ -290,6 +290,10 @@ describe('store page', () => {
             '__store_test_checkout_calls',
             String(calls + 1)
           );
+          // The first reservation is slow enough to type into the form.
+          if (calls === 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
           sessionStorage.setItem(
             '__store_test_checkout_body',
             String(init.body)
@@ -421,6 +425,8 @@ describe('store page', () => {
       await (await browser.$('input[name="state"]')).setValue('NY');
       await (await browser.$('input[name="postal-code"]')).setValue('10001');
       await (await browser.$('button=Continue to payment')).click();
+      await expect(await browser.$('button=Reserving…')).toExist();
+      await customerName.setValue('Grace Brewster Hopper');
 
       const shippingAddress = await browser.$('[data-shipping-address]');
       const testCalls = () =>
@@ -434,6 +440,12 @@ describe('store page', () => {
         'Grace Hopper\ngrace@example.com\n1 Navy Way\nNew York, NY 10001'
       );
       await expect(await browser.$('input[name="name"]')).not.toExist();
+      // Edit opens the reserved address, not what was typed while reserving.
+      await (await browser.$('button=Edit')).click();
+      await expect(await browser.$('input[name="name"]')).toHaveValue(
+        'Grace Hopper'
+      );
+      await (await browser.$('button=Cancel')).click();
       assert.strictEqual(
         await browser.execute(() =>
           sessionStorage.getItem('__store_test_checkout_calls')

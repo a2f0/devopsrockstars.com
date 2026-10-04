@@ -193,6 +193,9 @@ const Checkout = React.memo(() => {
       const pending = {checkout: result, shipping};
       storePendingCheckout(pending);
       clearShippingDraft();
+      // Drop anything typed while the request was in flight, so Edit opens
+      // the reserved address.
+      setShipping(shipping);
       setReservation(pending);
     } catch (checkoutError) {
       console.error('Failed to start checkout:', checkoutError);
