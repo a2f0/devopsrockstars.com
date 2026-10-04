@@ -77,7 +77,7 @@ bun run --cwd packages/backend --bun wrangler d1 execute \
   --command "UPDATE product_variants SET inventory_quantity = 5"
 ```
 
-To see the site as staging renders it, with the store and search enabled:
+To preview the committed staging flag configuration:
 
 ```shell
 bun run start-staging-server   # :8082
@@ -104,7 +104,8 @@ In CI, `e2e/specs/basic.spec.ts` runs against a production build on :8081 with
 every flag off; `e2e/specs/staging.spec.ts` runs against a staging build on :8082
 with every flag on. These fixed test profiles keep both behaviors covered when
 the rollout configuration changes. The manual development servers above use
-the committed matrix, which currently matches those profiles.
+the committed matrix; use `bun run ci` or `bun run ci-headless` for the fixed
+test profiles regardless of the current rollout.
 
 `e2e/specs/feature-flags.spec.ts` also builds each flag enabled by itself in both
 environments and checks navigation, routes, background preparation, viewer
@@ -124,13 +125,14 @@ bun run --cwd packages/frontend test \
 ## Feature flags
 
 [feature-flags.json](feature-flags.json) is the versioned rollout configuration.
-Every flag has an explicit boolean value for each environment:
+Every flag has an explicit boolean value for each environment. Run `bun run flags`
+to see the current values; this file is the source of truth for rollout state.
 
-| Flag | Production | Staging | Controls |
-| --- | --- | --- | --- |
-| `store` | off | on | Store navigation, routes, inventory prefetch, and hat preparation |
-| `search` | off | on | Search navigation and route |
-| `skyline3d` | off | on | Interactive Home skyline and bundled viewer assets |
+| Flag | Controls |
+| --- | --- |
+| `store` | Store navigation, routes, inventory prefetch, and hat preparation |
+| `search` | Search navigation and route |
+| `skyline3d` | Interactive Home skyline and bundled viewer assets |
 
 ```shell
 bun run flags          # Show the matrix and descriptions
@@ -142,8 +144,7 @@ To release or disable a feature, change only its boolean in the target
 environment's row in `feature-flags.json`, review the change, and redeploy that
 environment through the normal shipping workflow. For example, a later 3D
 skyline release would change `production.skyline3d` to `true`, leaving the store
-and search settings alone. This change has **not** been made: all three flags
-are currently off in production and on in staging.
+and search settings alone.
 
 The build validates the complete matrix and embeds only the selected
 environment's values in the browser bundle. Missing flags or environments,
@@ -161,8 +162,7 @@ The store flag governs the frontend; the store API's deployment is separate.
 To add a flag, register its description in
 `packages/frontend/src/featureFlags.ts`, add boolean values for both environments
 in the matrix, gate the relevant UI and build assets with that flag, and cover
-the enabled and disabled behavior in tests. Keep this table current with the
-matrix when changing the rollout.
+the enabled and disabled behavior in tests.
 
 ## Deployment
 
@@ -181,21 +181,20 @@ Worker, serving the same content as the apex rather than redirecting to it,
 which is what CloudFront did before the move. Neither Worker is reachable on
 `workers.dev`, so the only hostnames are the ones above.
 
-With the current flag matrix, **production** hides store and search links
-and routes and serves a not-found page for `/search` and `/store`. Staging
-keeps them reachable so the storefront can be exercised end to end against the
+Disabled store/search flags hide their navigation links and routes, so those
+paths serve a not-found page. When the store is enabled in staging, it uses
 Stripe test keys. Staging builds with `PUBLIC_ENVIRONMENT=staging`, which also
 adds a `noindex, nofollow` meta tag, an `X-Robots-Tag` response header, and a
 `robots.txt` that disallows everything, so only production is offered to search
 engines.
 
-Staging's Home page embeds the shared interactive 3D skyline from
+With `skyline3d` enabled, Home embeds the shared interactive 3D skyline from
 [a2f0/skyline](https://github.com/a2f0/skyline). Its assets are included only in
-staging builds and its iframe is removed when leaving Home. The original SVG
-stays visible while the background hat preview prepares; the 3D skyline starts
-after that preparation succeeds or fails so the two models build in sequence.
-Production keeps the original `/static/image/skyline.svg`. The `skyline3d` flag
-in `feature-flags.json` controls the eventual cutover independently of the store.
+builds with that flag enabled, and its iframe is removed when leaving Home. If
+`store` is also enabled, the original SVG stays visible while the background hat
+preview prepares; the 3D skyline starts after preparation succeeds or fails so
+the two models build in sequence. With the store disabled, the 3D skyline starts
+directly. Disabling `skyline3d` keeps the original `/static/image/skyline.svg`.
 
 Cloudflare prepends its own managed `robots.txt` block whose `User-agent: *`
 group merges with ours, and `Allow` wins that tie, so the header and meta tag

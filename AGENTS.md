@@ -182,7 +182,7 @@ store backend.
 
 - **Frontend**: React 19+ with TypeScript in strict mode
 - **Styling**: styled-components with CSS-in-JS architecture
-- **Routing**: react-router with production routes `/` and `/company` and staging-only store/search routes
+- **Routing**: react-router with `/` and `/company` plus flag-controlled store/search routes
 - **Build**: Bun bundler with ES modules output
 - **Testing**: WebDriverIO (WDIO) for end-to-end testing
 - **Package Manager**: Bun for dependency management
@@ -190,7 +190,7 @@ store backend.
 ### Application Structure
 
 - **Layout**: Flexbox-based layout system using custom styled components
-- **Home**: Original SVG skyline in production; shared interactive 3D skyline in staging
+- **Home**: Original SVG skyline, or shared interactive 3D skyline when `skyline3d` is enabled
 - **Responsive Design**: Component-based responsive layout with flex containers
 
 ### Key Components
@@ -287,16 +287,15 @@ browser. `bun run flags` shows the matrix and `bun run flags:check` validates it
 Flag changes require a new deployment. See README's Feature flags section for
 the update workflow and registry conventions.
 
-- The current matrix keeps store, search, and 3D skyline **staging-only**. Production hides
-  store/search links and routes and keeps the original SVG skyline. The
-  `skyline3d` feature controls the 3D viewer and asset inclusion. Each flag is
+- Store/search flags control their links and routes. The `skyline3d` flag
+  controls the 3D viewer and asset inclusion, with the SVG used when off. Each flag is
   independent; do not couple a flag's value to whether the environment is staging
-- Staging prepares the hat preview before starting the 3D skyline to avoid
-  competing model builds; the original SVG stays visible during preparation
+- When `store` and `skyline3d` are both on, hat preparation finishes before the
+  skyline starts to avoid competing model builds; the SVG stays visible meanwhile
 - **Staging** adds a `noindex` meta tag, an `X-Robots-Tag` header, and a
   disallow-all `robots.txt`, so only production is indexable
-- The store JavaScript is still present in the production bundle; it simply has
-  no link or route reaching it
+- Disabling the store removes its links and routes; its implementation JavaScript
+  can still be present in the bundle
 - `packages/frontend/buildAssets.ts` generates `robots.txt` and `_headers`;
   both are covered by unit and e2e tests
 - Indexing stays tied to the environment, outside the feature flag registry
