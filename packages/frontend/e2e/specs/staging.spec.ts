@@ -294,7 +294,20 @@ describe('store page', () => {
             '__store_test_checkout_body',
             String(init.body)
           );
-          // Reserving again after an address change returns a new order.
+          // Reserving again after an address change fails once, then returns
+          // a new order.
+          if (calls === 1) {
+            return Response.json(
+              {
+                error: {
+                  code: 'checkout_unavailable',
+                  message:
+                    'The store is busy. Please try again in a few minutes.',
+                },
+              },
+              {status: 503}
+            );
+          }
           return Response.json(
             calls === 0
               ? fixtures.checkout
@@ -469,7 +482,8 @@ describe('store page', () => {
       });
 
       // A new address cancels the order and reserves the same items again
-      // with new credentials, even after the cart changed.
+      // with new credentials, even after the cart changed and the first
+      // replacement attempt failed.
       await browser.execute(() =>
         sessionStorage.setItem(
           'devopsrockstars.store.cart',
@@ -482,13 +496,23 @@ describe('store page', () => {
       await addressLine1.setValue('2 Navy Way');
       await (await browser.$('input[name="address-line2"]')).setValue('Apt 4');
       await (await browser.$('button=Continue to payment')).click();
+      await expect(
+        await browser.$(
+          'p=The store is busy. Please try again in a few minutes.'
+        )
+      ).toExist();
+      await expect(addressLine1).toHaveValue('2 Navy Way');
+      await expect(
+        await browser.$('span=DevOps Rockstars 59FIFTY — 7 1/4 × 1')
+      ).toExist();
+      await (await browser.$('button=Continue to payment')).click();
       await expect(shippingAddress).toHaveText('2 Navy Way, Apt 4', {
         containing: true,
       });
       await expect(await browser.$('h2=Payment')).toExist();
       assert.deepStrictEqual(await testCalls(), {
         canceled: `${orderId} order-token`,
-        checkout: '2',
+        checkout: '3',
       });
       const replacement = await browser.execute(
         id => ({

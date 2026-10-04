@@ -68,6 +68,11 @@ const Checkout = React.memo(() => {
     reservation?.shipping ?? EMPTY_SHIPPING
   );
   const [editing, setEditing] = useState(false);
+  // The items of a reservation released for a new address. A failed
+  // replacement retries with them rather than with the current cart.
+  const [releasedLines, setReleasedLines] = useState<
+    CreateCheckoutResponse['lines'] | null
+  >(null);
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [canceling, setCanceling] = useState(false);
@@ -127,16 +132,18 @@ const Checkout = React.memo(() => {
     variantId: item.variantId,
     variantLabel: item.variant.label,
   }));
-  const orderLines = checkout?.lines ?? catalogLines;
+  const reservedLines = checkout?.lines ?? releasedLines;
+  const orderLines = reservedLines ?? catalogLines;
   const total =
     checkout?.totalAmount ??
     orderLines.reduce((sum, item) => sum + item.unitAmount * item.quantity, 0);
   const currency = checkout?.currency ?? orderLines[0]?.currency ?? 'usd';
   // A new address reserves the same items again, even if the cart changed
   // after the first reservation.
-  const checkoutItems = (reservation?.checkout.lines ?? visibleItems).map(
-    item => ({variantId: item.variantId, quantity: item.quantity})
-  );
+  const checkoutItems = (reservedLines ?? visibleItems).map(item => ({
+    variantId: item.variantId,
+    quantity: item.quantity,
+  }));
 
   const update = (field: keyof ShippingInput, value: string) => {
     setShipping(current => ({...current, [field]: value}));
@@ -175,9 +182,10 @@ const Checkout = React.memo(() => {
     setError(null);
     try {
       // A reservation keeps the address it was made with, so a new address
-      // releases it and reserves the cart again.
-      if (reservation && !(await releaseReservation(reservation.checkout))) {
-        return;
+      // releases it and reserves its items again.
+      if (reservation) {
+        if (!(await releaseReservation(reservation.checkout))) return;
+        setReleasedLines(reservation.checkout.lines);
       }
       const result = await createCheckout(
         {items: checkoutItems, shipping},
@@ -187,6 +195,7 @@ const Checkout = React.memo(() => {
       const pending = {checkout: result, shipping};
       storePendingCheckout(pending);
       setReservation(pending);
+      setReleasedLines(null);
     } catch (checkoutError) {
       console.error('Failed to start checkout:', checkoutError);
       setError(
@@ -230,7 +239,7 @@ const Checkout = React.memo(() => {
     ? Date.parse(checkout.expiresAt) <= clock
     : false;
 
-  if (!checkout && cart.items.length === 0) {
+  if (!reservedLines && cart.items.length === 0) {
     return (
       <StoreShell>
         <CheckoutHeading />
