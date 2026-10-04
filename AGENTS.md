@@ -79,11 +79,12 @@ commit. Validate, commit, and re-review repairs until findings are addressed.
 Report the reviewer, fallback, verdict, repair count, and reviewed commit.
 
 Allow Gemini at least 60 seconds after opening or updating a PR, then fetch
-unresolved review threads and follow the reply rules above. Require the
-`code-quality` check from `Github Actions` to pass on the reviewed head and
-retain the production branch's strict required-check protection. Use the shared
+unresolved review threads and follow the reply rules above. Use the shared
 exact-head squash helper; invoke `node_modules/.bin/agent-tool pr merge` directly
-when passing an empty subject because `bun run` drops empty arguments.
+when passing an empty subject because `bun run` drops empty arguments. Per
+`agent-tool.json`, it requires `code-quality` from `Github Actions` on the
+reviewed head and refuses to merge unless the `production` ruleset enforces
+strict status checks that the merging account cannot bypass.
 
 After merging to `production`, wait for `.github/workflows/main.yml` to deploy
 that merge commit successfully. Smoke-test Home and Company at phone and desktop

@@ -28,8 +28,10 @@ agent-tool pr merge 'feat: describe the change' <reviewed-head-oid> <base-branch
 The helper enforces HEAD atomically through GitHub's `expectedHeadOid`, checks
 CI, rejects queued or automatic merges, and creates a subject-only squash with
 the PR reference. GitHub has no atomic expected-base argument in this mutation;
-repository branch protection must enforce any required base freshness. Do not
-retarget the PR concurrently with merging.
+repository branch protection must enforce any required base freshness. With
+`merge.requireStrictBaseFreshness`, the helper refuses to merge unless an
+active strict status ruleset that the actor cannot bypass protects the base. Do
+not retarget the PR concurrently with merging.
 
 Confirm GitHub reports MERGED before any cleanup. A failed or uncertain mutation
 is not evidence of a merge. Preserve the branch on failure. After a confirmed

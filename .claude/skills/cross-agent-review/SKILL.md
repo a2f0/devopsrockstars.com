@@ -24,7 +24,9 @@ repository that owns the PR, which can differ from the checkout's origin.
 Record the exact base and HEAD before reviewing. The tool reviews raw committed
 files and excludes worktree edits. A zero exit means a complete review was
 returned; it does not mean the findings are non-blocking. Read the final
-`VERDICT: BLOCKER|MAJOR|MINOR|SUGGESTION|CLEAN` and the findings.
+`VERDICT: BLOCKER|MAJOR|MINOR|SUGGESTION|CLEAN` and the findings. A reviewer
+that labels findings `[P0]` through `[P3]` uses the same scale: `[P0]` and
+`[P1]` are BLOCKER and MAJOR, `[P2]` and `[P3]` are MINOR and SUGGESTION.
 
 If a CLI is unavailable, out of credits, or returns an unusable review, try another
 available reviewer and disclose the fallback. Do not silently convert a failed
