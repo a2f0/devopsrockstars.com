@@ -2,7 +2,7 @@
 import path from 'node:path';
 import {
   disabledFeatureFlags,
-  featureFlagNames,
+  enabledFeatureFlags,
 } from '../packages/frontend/src/featureFlags';
 import {startFrontendServer} from '../packages/frontend/tooling/server';
 
@@ -29,9 +29,7 @@ try {
   staging = await startFrontendServer({
     port: 8082,
     environment: 'staging',
-    featureFlags: Object.fromEntries(
-      featureFlagNames.map(name => [name, true])
-    ) as typeof disabledFeatureFlags,
+    featureFlags: enabledFeatureFlags,
     minify: true,
   });
   tests = Bun.spawn(

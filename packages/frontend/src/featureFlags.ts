@@ -8,7 +8,7 @@ export const featureFlagDefinitions = {
   skyline3d: 'Interactive 3D skyline and its viewer assets',
 } as const;
 
-export type FeatureFlagName = keyof typeof featureFlagDefinitions;
+type FeatureFlagName = keyof typeof featureFlagDefinitions;
 export type FeatureFlags = Readonly<Record<FeatureFlagName, boolean>>;
 export type FeatureFlagConfiguration = Readonly<
   Record<SiteEnvironment, FeatureFlags>
@@ -18,12 +18,17 @@ export const featureFlagNames = Object.freeze(
   Object.keys(featureFlagDefinitions) as FeatureFlagName[]
 );
 
-export const disabledFeatureFlags: FeatureFlags = Object.freeze(
-  Object.fromEntries(featureFlagNames.map(name => [name, false])) as Record<
-    FeatureFlagName,
-    boolean
-  >
-);
+function uniformFeatureFlags(enabled: boolean): FeatureFlags {
+  return Object.freeze(
+    Object.fromEntries(featureFlagNames.map(name => [name, enabled])) as Record<
+      FeatureFlagName,
+      boolean
+    >
+  );
+}
+
+export const disabledFeatureFlags = uniformFeatureFlags(false);
+export const enabledFeatureFlags = uniformFeatureFlags(true);
 
 // Unbundled execution fails closed. Browser builds receive only the resolved
 // environment's flags, never a mutable client-side override or the matrix.

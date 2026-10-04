@@ -44,8 +44,11 @@ describe('independent feature flags', () => {
             environment === 'staging'
           );
           assert.equal(
-            (await fetch(new URL('/static/skyline/index.html', server.url)))
-              .status,
+            (
+              await fetch(new URL('/static/skyline/index.html', server.url), {
+                method: 'HEAD',
+              })
+            ).status,
             flags.skyline3d ? 200 : 404
           );
           await browser.url(server.url.href);

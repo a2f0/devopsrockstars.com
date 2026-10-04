@@ -64,8 +64,18 @@ export function parseFeatureFlagConfiguration(
   ) as FeatureFlagConfiguration;
 }
 
-export async function loadFeatureFlagConfiguration() {
+export async function loadFeatureFlagConfiguration(
+  filename = featureFlagsPath
+) {
   // Read on each build, including dev-server rebuilds, rather than caching a
   // JSON module. A bad edit leaves the previous successful dev build intact.
-  return parseFeatureFlagConfiguration(await Bun.file(featureFlagsPath).json());
+  let configuration: unknown;
+  try {
+    configuration = await Bun.file(filename).json();
+  } catch (cause) {
+    throw new Error(`Cannot read feature flag configuration: ${filename}`, {
+      cause,
+    });
+  }
+  return parseFeatureFlagConfiguration(configuration);
 }

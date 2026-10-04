@@ -1,4 +1,7 @@
 import {expect, test} from 'bun:test';
+import {mkdtemp, rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {siteEnvironments} from '../src/environment';
 import {disabledFeatureFlags, featureFlagNames} from '../src/featureFlags';
 import {
@@ -14,6 +17,22 @@ function configuration() {
     staging: {...disabledFeatureFlags},
   };
 }
+
+test('unreadable and malformed configuration errors identify the file', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'feature-flags-'));
+  const filename = join(directory, 'feature-flags.json');
+  try {
+    await expect(loadFeatureFlagConfiguration(filename)).rejects.toThrow(
+      filename
+    );
+    await Bun.write(filename, '{"production":');
+    await expect(loadFeatureFlagConfiguration(filename)).rejects.toThrow(
+      filename
+    );
+  } finally {
+    await rm(directory, {recursive: true, force: true});
+  }
+});
 
 test('the committed matrix validates and preserves every explicit value', async () => {
   const raw = await Bun.file(featureFlagsPath).json();

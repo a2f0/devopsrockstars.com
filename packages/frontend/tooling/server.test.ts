@@ -1,5 +1,7 @@
 import {afterAll, beforeAll, expect, test} from 'bun:test';
 import {hasAllowedOrigin} from '../../backend/src/http';
+import {siteEnvironments} from '../src/environment';
+import {disabledFeatureFlags, enabledFeatureFlags} from '../src/featureFlags';
 import {loadFeatureFlagConfiguration} from './featureFlags';
 import {startFrontendServer} from './server';
 
@@ -43,11 +45,13 @@ beforeAll(async () => {
   production = await startFrontendServer({
     port: 0,
     environment: 'production',
+    featureFlags: disabledFeatureFlags,
     apiProxy: upstream.url.href,
   });
   staging = await startFrontendServer({
     port: 0,
     environment: 'staging',
+    featureFlags: enabledFeatureFlags,
     apiProxy: upstream.url.href,
   });
 }, 30000);
@@ -103,10 +107,9 @@ test('static assets have correct MIME types and missing files never become HTML'
 });
 
 test('each environment serves skyline assets only when its flag is enabled', async () => {
-  const configuration = await loadFeatureFlagConfiguration();
-  for (const [server, environment] of [
-    [production, 'production'],
-    [staging, 'staging'],
+  for (const [server, environment, flags] of [
+    [production, 'production', disabledFeatureFlags],
+    [staging, 'staging', enabledFeatureFlags],
   ] as const) {
     for (const pathname of [
       '/static/skyline/index.html',
@@ -117,10 +120,8 @@ test('each environment serves skyline assets only when its flag is enabled', asy
       '/static/skyline/stars.svg',
     ]) {
       const response = await fetch(new URL(pathname, server.url));
-      expect(response.status).toBe(
-        configuration[environment].skyline3d ? 200 : 404
-      );
-      if (configuration[environment].skyline3d) {
+      expect(response.status).toBe(flags.skyline3d ? 200 : 404);
+      if (flags.skyline3d) {
         expect(response.headers.has('X-Robots-Tag')).toBe(
           environment === 'staging'
         );
@@ -136,17 +137,21 @@ test('each environment serves skyline assets only when its flag is enabled', asy
 
 test('build manifests expose only the flags resolved for that environment', async () => {
   const configuration = await loadFeatureFlagConfiguration();
-  for (const [server, environment] of [
-    [production, 'production'],
-    [staging, 'staging'],
-  ] as const) {
-    const response = await fetch(new URL('/feature-flags.json', server.url));
-    expect(response.headers.get('Content-Type')).toContain('application/json');
-    expect(response.headers.get('Cache-Control')).toContain('no-cache');
-    expect(await response.json()).toEqual({
-      environment,
-      flags: configuration[environment],
-    });
+  for (const environment of siteEnvironments) {
+    const server = await startFrontendServer({port: 0, environment});
+    try {
+      const response = await fetch(new URL('/feature-flags.json', server.url));
+      expect(response.headers.get('Content-Type')).toContain(
+        'application/json'
+      );
+      expect(response.headers.get('Cache-Control')).toContain('no-cache');
+      expect(await response.json()).toEqual({
+        environment,
+        flags: configuration[environment],
+      });
+    } finally {
+      server.stop();
+    }
   }
 });
 
