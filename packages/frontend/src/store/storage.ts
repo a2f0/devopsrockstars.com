@@ -141,8 +141,9 @@ export function clearPendingCheckout() {
   removeValue(PENDING_CHECKOUT_KEY);
 }
 
-// A new address cancels the reservation before reserving again, so the
-// address is kept until that second step succeeds, even across a reload.
+// The address of each checkout attempt is kept until a reservation succeeds,
+// so a reload repeats the same request, which resumes a checkout whose
+// response was lost.
 export function storeShippingDraft(shipping: ShippingInput) {
   storeValue(SHIPPING_DRAFT_KEY, JSON.stringify(shipping));
 }

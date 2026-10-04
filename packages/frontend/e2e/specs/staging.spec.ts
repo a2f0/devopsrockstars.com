@@ -294,9 +294,9 @@ describe('store page', () => {
             '__store_test_checkout_body',
             String(init.body)
           );
-          // Reserving again after an address change fails once, then returns
-          // a new order.
-          if (calls === 1) {
+          // Reserving again after an address change fails twice, then
+          // returns a new order.
+          if (calls === 1 || calls === 2) {
             return Response.json(
               {
                 error: {
@@ -483,7 +483,8 @@ describe('store page', () => {
 
       // A new address cancels the order and reserves the same items again
       // with new credentials, even after the cart changed and a reload
-      // followed a failed replacement attempt.
+      // followed failed replacement attempts. The reload restores the
+      // address of the latest attempt.
       await browser.execute(() =>
         sessionStorage.setItem(
           'devopsrockstars.store.cart',
@@ -495,29 +496,31 @@ describe('store page', () => {
       await (await browser.$('button=Edit')).click();
       await addressLine1.setValue('2 Navy Way');
       await (await browser.$('input[name="address-line2"]')).setValue('Apt 4');
+      const busyStatus = await browser.$(
+        'p=The store is busy. Please try again in a few minutes.'
+      );
       await (await browser.$('button=Continue to payment')).click();
-      await expect(
-        await browser.$(
-          'p=The store is busy. Please try again in a few minutes.'
-        )
-      ).toExist();
+      await expect(busyStatus).toExist();
+      const addressLine2 = await browser.$('input[name="address-line2"]');
+      await addressLine2.setValue('Apt 5');
+      await (await browser.$('button=Continue to payment')).click();
+      await browser.waitUntil(async () => (await testCalls()).checkout === '3');
+      await expect(busyStatus).toExist();
       await browser.refresh();
       await BasePage.waitForAppReady();
       await expect(addressLine1).toHaveValue('2 Navy Way');
-      await expect(await browser.$('input[name="address-line2"]')).toHaveValue(
-        'Apt 4'
-      );
+      await expect(addressLine2).toHaveValue('Apt 5');
       await expect(
         await browser.$('span=DevOps Rockstars 59FIFTY — 7 1/4 × 1')
       ).toExist();
       await (await browser.$('button=Continue to payment')).click();
-      await expect(shippingAddress).toHaveText('2 Navy Way, Apt 4', {
+      await expect(shippingAddress).toHaveText('2 Navy Way, Apt 5', {
         containing: true,
       });
       await expect(await browser.$('h2=Payment')).toExist();
       assert.deepStrictEqual(await testCalls(), {
         canceled: `${orderId} order-token`,
-        checkout: '3',
+        checkout: '4',
       });
       const replacement = await browser.execute(
         id => ({
@@ -540,7 +543,7 @@ describe('store page', () => {
         replacement.request.shipping.addressLine1,
         '2 Navy Way'
       );
-      assert.strictEqual(replacement.request.shipping.addressLine2, 'Apt 4');
+      assert.strictEqual(replacement.request.shipping.addressLine2, 'Apt 5');
       assert.deepStrictEqual(
         replacement.pending.shipping,
         replacement.request.shipping

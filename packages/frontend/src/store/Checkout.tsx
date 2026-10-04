@@ -179,13 +179,12 @@ const Checkout = React.memo(() => {
     setError(null);
     try {
       // A reservation keeps the address it was made with, so a new address
-      // releases it and reserves its items again. The cart and the draft
-      // keep both for a retry, even after a reload.
+      // releases it and reserves its items again, which the cart keeps.
       if (reservation) {
         if (!(await releaseReservation(reservation.checkout))) return;
         cart.replace(checkoutItems);
-        storeShippingDraft(shipping);
       }
+      storeShippingDraft(shipping);
       const result = await createCheckout(
         {items: checkoutItems, shipping},
         getCheckoutClientToken()
