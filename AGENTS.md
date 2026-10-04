@@ -1,6 +1,8 @@
 # Agent Notes
 
 This file is the shared guidance for coding agents working in this repository.
+The rule in `.claude/rules/repository.md` points Claude Code here without
+maintaining a second copy of the project instructions.
 
 ## Repository Identification (Critical)
 
@@ -48,6 +50,9 @@ Its managed skills in `.agents/skills` and `.claude/skills` own the PR workflow;
 `agent-tool.json` supplies title and required CI policy. Update installed skills
 with `bun run agents:sync` after changing the dependency pin, and check them
 with `bun run agents:check`. Do not edit managed skills locally.
+The project `address-gemini-feedback` skill handles review-thread replies;
+`scripts/check-agent-skills-in-sync.mjs` keeps project skills identical between
+`.agents/skills` and `.claude/skills` through the pre-commit hook.
 
 Primary checks in this repo:
 
@@ -82,9 +87,9 @@ when passing an empty subject because `bun run` drops empty arguments.
 
 After merging to `production`, wait for `.github/workflows/main.yml` to deploy
 that merge commit successfully. Smoke-test Home and Company at phone and desktop
-sizes, confirm store and search remain hidden and Home uses the SVG skyline, and check the production
-storefront API returns JSON. For staging, verify store/search and the 3D skyline
-remain available. Mobile browser checks should emulate viewport and touch input,
+sizes, confirm store and search remain hidden and Home uses the SVG skyline, and
+check the production storefront API returns JSON. For staging, verify
+store/search and the 3D skyline remain available. Mobile browser checks should emulate viewport and touch input,
 including narrow portrait, landscape, and viewport height changes.
 Verify branch identities and merge ancestry before deleting shipped branches.
 

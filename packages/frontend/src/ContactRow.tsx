@@ -9,7 +9,6 @@ const Row = styled.a`
   width: fit-content;
   max-width: 100%;
   min-height: 44px;
-  pointer-events: auto;
   text-decoration: none;
 
   .svg {

@@ -27,7 +27,6 @@ const Footer = React.memo(() => {
               <div
                 style={{
                   cursor: 'pointer',
-                  pointerEvents: 'auto',
                   width: '200px',
                 }}
               >

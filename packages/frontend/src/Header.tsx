@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useLayoutEffect, useRef} from 'react';
 import {Link} from 'react-router';
 import styled from 'styled-components';
 import {features} from './environment';
@@ -24,8 +24,26 @@ const MenuNav = styled.nav`
 `;
 
 const Header = React.memo(() => {
+  const header = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const element = header.current;
+    if (!element) return;
+    const updateHeight = () =>
+      document.documentElement.style.setProperty(
+        '--header-height',
+        `${element.getBoundingClientRect().height}px`
+      );
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--header-height');
+    };
+  }, []);
+
   return (
-    <FlexHeader>
+    <FlexHeader ref={header}>
       <FlexContainerRow>
         <FlexContainerLeft>
           <MenuItemLeft />

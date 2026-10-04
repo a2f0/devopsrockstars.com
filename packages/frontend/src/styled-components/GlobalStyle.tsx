@@ -10,7 +10,7 @@ const GlobalStyle = createGlobalStyle`
     pointer-events: none;
     margin-left: calc(100vw - 100%);
     margin-right: 0;
-    scroll-padding-top: 76px;
+    scroll-padding-top: calc(var(--header-height, 60px) + 16px);
   }
 
   body {
@@ -32,7 +32,6 @@ const GlobalStyle = createGlobalStyle`
 
   a:hover {
     color: var(--hover-color);
-    pointer-events: auto;
   }
 
   h1 {

@@ -1,10 +1,16 @@
-import {afterAll, beforeAll, describe, it} from 'bun:test';
+import {afterAll, afterEach, beforeAll, describe, it} from 'bun:test';
 import assert from 'node:assert';
 import {browser, expect, startBrowser, stopBrowser} from '../browser';
 import {BasePage} from '../pageObjects/base';
 
 beforeAll(startBrowser, 60000);
 afterAll(stopBrowser, 60000);
+afterEach(async () => {
+  await browser.sendCommand('Emulation.clearDeviceMetricsOverride', {});
+  await browser.sendCommand('Emulation.setTouchEmulationEnabled', {
+    enabled: false,
+  });
+});
 
 const viewports = [
   {width: 320, height: 640},
@@ -238,5 +244,28 @@ describe('mobile layouts', () => {
     } finally {
       await fixtures.remove();
     }
+  });
+
+  it('updates scroll spacing when the navigation wraps', async () => {
+    await emulatePhone(320, 640);
+    await BasePage.openStaging('search');
+    await BasePage.waitForAppReady();
+    await browser.execute(() => {
+      for (const link of document.querySelectorAll<HTMLElement>('nav a')) {
+        link.style.fontSize = '32px';
+      }
+    });
+    await browser.waitUntil(() =>
+      browser.execute(() => {
+        const header = document.querySelector('header');
+        if (!header) return false;
+        const height = header.getBoundingClientRect().height;
+        const padding = parseFloat(
+          getComputedStyle(document.documentElement).scrollPaddingTop
+        );
+        return height > 60 && padding >= height + 16;
+      })
+    );
+    await expectLayout(320);
   });
 });
