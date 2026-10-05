@@ -2,6 +2,7 @@
   "name": "devopsrockstars",
   "version": "2.0.68",
   "private": true,
+  "license": "UNLICENSED",
   "description": "",
   "engines": {
     "bun": ">=1.4.2 <1.5"
