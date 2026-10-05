@@ -2,6 +2,7 @@
   "name": "@devopsrockstars/shared-types",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

@@ -2,6 +2,7 @@
   "name": "@devopsrockstars/backend",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "db:migrate:local": "bun run --bun wrangler d1 migrations apply devopsrockstars-store-staging --env staging --local",
