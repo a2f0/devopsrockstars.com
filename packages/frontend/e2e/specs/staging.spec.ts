@@ -321,6 +321,20 @@ describe('store page', () => {
         }
         const order = /^\/api\/orders\/([^/]+)(\/cancel)?$/u.exec(url.pathname);
         if (order?.[1] && order[2] && init?.method === 'POST') {
+          // A slow cancellation that fails, as when a payment is processing.
+          if (sessionStorage.getItem('__store_test_cancel_fails')) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return Response.json(
+              {
+                error: {
+                  code: 'payment_processing',
+                  message:
+                    'The payment is already processing and cannot be canceled here.',
+                },
+              },
+              {status: 409}
+            );
+          }
           sessionStorage.setItem(
             '__store_test_canceled',
             `${order[1]} ${new Headers(init.headers).get('X-Order-Token')}`
@@ -570,6 +584,26 @@ describe('store page', () => {
       );
       assert.strictEqual(replacement.token, 'replacement-token');
       assert.strictEqual(replacement.draft, null);
+
+      // The address stays locked while the payment form is busy, and unlocks
+      // once that work fails.
+      await browser.execute(() =>
+        sessionStorage.setItem('__store_test_cancel_fails', 'true')
+      );
+      const edit = await browser.$('button=Edit');
+      await expect(edit).toBeEnabled();
+      await (await browser.$('button=Cancel checkout')).click();
+      await expect(await browser.$('button=Canceling…')).toExist();
+      await expect(edit).toBeDisabled();
+      await expect(
+        await browser.$(
+          'p=The payment is already processing and cannot be canceled here.'
+        )
+      ).toExist();
+      await expect(edit).toBeEnabled();
+      await browser.execute(() =>
+        sessionStorage.removeItem('__store_test_cancel_fails')
+      );
 
       await BasePage.openStaging(`store/receipt?order=${replacementOrderId}`);
       await expect(
