@@ -2,11 +2,14 @@ import assert from 'node:assert/strict';
 import {beforeEach, test} from 'node:test';
 import {
   clearPendingCheckout,
+  clearShippingDraft,
   getCheckoutClientToken,
   readOrderToken,
   readPendingCheckout,
+  readShippingDraft,
   storeOrderToken,
   storePendingCheckout,
+  storeShippingDraft,
 } from './storage';
 
 class MemoryStorage implements Storage {
@@ -101,6 +104,25 @@ test('keeps a recently expired checkout available for cancellation', () => {
   const pending = pendingCheckout(new Date(Date.now() - 60_000).toISOString());
   storePendingCheckout(pending);
   assert.deepEqual(readPendingCheckout(), pending);
+});
+
+test('keeps a shipping draft until it is cleared', () => {
+  const {shipping} = pendingCheckout(new Date().toISOString());
+  storeShippingDraft(shipping);
+  assert.deepEqual(readShippingDraft(), shipping);
+  clearShippingDraft();
+  assert.equal(readShippingDraft(), null);
+});
+
+test('discards a malformed shipping draft', () => {
+  for (const draft of ['{', JSON.stringify({name: 'Grace Hopper'})]) {
+    sessionStorage.setItem('devopsrockstars.store.shipping-draft', draft);
+    assert.equal(readShippingDraft(), null);
+    assert.equal(
+      sessionStorage.getItem('devopsrockstars.store.shipping-draft'),
+      null
+    );
+  }
 });
 
 test('keeps a random checkout client token stable for the page session', () => {

@@ -360,6 +360,17 @@ export const FullField = styled(Field)`
   grid-column: 1 / -1;
 `;
 
+// The reserved address, one line per part, in place of the locked form.
+export const ShippingSummary = styled.p`
+  color: #ccc;
+  font-size: 15px;
+  line-height: 1.5;
+
+  > span {
+    display: block;
+  }
+`;
+
 export const FormActions = styled.div`
   margin-top: 20px;
   display: flex;

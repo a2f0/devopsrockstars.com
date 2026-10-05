@@ -31,6 +31,7 @@ interface MountedPayment {
 
 interface Props {
   readonly checkout: CreateCheckoutResponse;
+  readonly onBusyChange: (busy: boolean) => void;
   readonly onCancel: () => Promise<void>;
   readonly paymentExpired: boolean;
   readonly publishableKey: string;
@@ -41,6 +42,7 @@ interface Props {
 const StripePayment = React.memo(
   ({
     checkout,
+    onBusyChange,
     onCancel,
     paymentExpired,
     publishableKey,
@@ -54,6 +56,13 @@ const StripePayment = React.memo(
       null
     );
     const [error, setError] = useState<string | null>(null);
+
+    // Checkout keeps the shipping address locked while a payment or a
+    // cancellation is in flight.
+    useEffect(() => {
+      onBusyChange(busyAction !== null);
+      return () => onBusyChange(false);
+    }, [busyAction, onBusyChange]);
 
     useEffect(() => {
       let active = true;
@@ -106,7 +115,13 @@ const StripePayment = React.memo(
       return () => {
         active = false;
         mountedRef.current = null;
-        payment?.destroy();
+        // Stripe tears down an element that fails to load, and destroying it
+        // again throws, which would take the whole checkout down with it.
+        try {
+          payment?.destroy();
+        } catch (destroyError) {
+          console.warn('Failed to destroy the payment form:', destroyError);
+        }
       };
     }, [checkout.clientSecret, publishableKey]);
 

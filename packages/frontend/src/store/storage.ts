@@ -5,11 +5,12 @@ import type {
 
 const CHECKOUT_CLIENT_KEY = 'devopsrockstars.store.checkout-client';
 const PENDING_CHECKOUT_KEY = 'devopsrockstars.store.pending-checkout';
+const SHIPPING_DRAFT_KEY = 'devopsrockstars.store.shipping-draft';
 const ORDER_TOKEN_PREFIX = 'devopsrockstars.store.order.';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-interface PendingCheckout {
+export interface PendingCheckout {
   readonly checkout: CreateCheckoutResponse;
   readonly shipping: ShippingInput;
 }
@@ -138,6 +139,30 @@ export function readPendingCheckout(): PendingCheckout | null {
 
 export function clearPendingCheckout() {
   removeValue(PENDING_CHECKOUT_KEY);
+}
+
+// The address of each checkout attempt is kept until a reservation succeeds,
+// so a reload repeats the same request, which resumes a checkout whose
+// response was lost.
+export function storeShippingDraft(shipping: ShippingInput) {
+  storeValue(SHIPPING_DRAFT_KEY, JSON.stringify(shipping));
+}
+
+export function readShippingDraft(): ShippingInput | null {
+  const stored = storedValue(SHIPPING_DRAFT_KEY);
+  if (!stored) return null;
+  try {
+    const shipping: unknown = JSON.parse(stored);
+    if (isShipping(shipping)) return shipping;
+  } catch {
+    // A draft that is not JSON is discarded below.
+  }
+  removeValue(SHIPPING_DRAFT_KEY);
+  return null;
+}
+
+export function clearShippingDraft() {
+  removeValue(SHIPPING_DRAFT_KEY);
 }
 
 export function storeOrderToken(orderId: string, token: string) {

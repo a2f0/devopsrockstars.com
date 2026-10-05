@@ -207,8 +207,9 @@ describe('search page', () => {
 });
 
 describe('store page', () => {
-  it('reserves, resumes, and polls a checkout with mocked APIs', async () => {
+  it('reserves, resumes, edits, and polls a checkout with mocked APIs', async () => {
     const orderId = '12345678-1234-4234-8234-123456789abc';
+    const replacementOrderId = '87654321-4321-4321-8321-cba987654321';
     const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
     const fixtures = {
       checkout: {
@@ -229,7 +230,11 @@ describe('store page', () => {
         orderToken: 'order-token',
         totalAmount: 2000,
       },
-      orderId,
+      replacement: {
+        clientSecret: 'pi_replacement_secret_test',
+        orderId: replacementOrderId,
+        orderToken: 'replacement-token',
+      },
       storefront: {
         products: [
           {
@@ -285,9 +290,64 @@ describe('store page', () => {
             '__store_test_checkout_calls',
             String(calls + 1)
           );
-          return Response.json(fixtures.checkout, {status: 201});
+          // The first reservation is slow enough to type into the form.
+          if (calls === 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          sessionStorage.setItem(
+            '__store_test_checkout_body',
+            String(init.body)
+          );
+          // Reserving again after an address change fails twice, then
+          // returns a new order.
+          if (calls === 1 || calls === 2) {
+            return Response.json(
+              {
+                error: {
+                  code: 'checkout_unavailable',
+                  message:
+                    'The store is busy. Please try again in a few minutes.',
+                },
+              },
+              {status: 503}
+            );
+          }
+          return Response.json(
+            calls === 0
+              ? fixtures.checkout
+              : {...fixtures.checkout, ...fixtures.replacement},
+            {status: 201}
+          );
         }
-        if (url.pathname === `/api/orders/${fixtures.orderId}`) {
+        const order = /^\/api\/orders\/([^/]+)(\/cancel)?$/u.exec(url.pathname);
+        if (order?.[1] && order[2] && init?.method === 'POST') {
+          // A slow cancellation that fails, as when a payment is processing.
+          if (sessionStorage.getItem('__store_test_cancel_fails')) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return Response.json(
+              {
+                error: {
+                  code: 'payment_processing',
+                  message:
+                    'The payment is already processing and cannot be canceled here.',
+                },
+              },
+              {status: 409}
+            );
+          }
+          sessionStorage.setItem(
+            '__store_test_canceled',
+            `${order[1]} ${new Headers(init.headers).get('X-Order-Token')}`
+          );
+          return Response.json({
+            currency: 'usd',
+            expiresAt: fixtures.checkout.expiresAt,
+            orderId: order[1],
+            status: 'canceled',
+            totalAmount: 2000,
+          });
+        }
+        if (order?.[1] && !order[2]) {
           const calls = Number(
             sessionStorage.getItem('__store_test_order_calls') ?? '0'
           );
@@ -295,7 +355,7 @@ describe('store page', () => {
           return Response.json({
             currency: 'usd',
             expiresAt: fixtures.checkout.expiresAt,
-            orderId: fixtures.orderId,
+            orderId: order[1],
             status: calls === 0 ? 'awaiting_payment' : 'paid',
             totalAmount: 2000,
           });
@@ -379,8 +439,27 @@ describe('store page', () => {
       await (await browser.$('input[name="state"]')).setValue('NY');
       await (await browser.$('input[name="postal-code"]')).setValue('10001');
       await (await browser.$('button=Continue to payment')).click();
+      await expect(await browser.$('button=Reserving…')).toExist();
+      await customerName.setValue('Grace Brewster Hopper');
 
+      const shippingAddress = await browser.$('[data-shipping-address]');
+      const testCalls = () =>
+        browser.execute(() => ({
+          canceled: sessionStorage.getItem('__store_test_canceled'),
+          checkout: sessionStorage.getItem('__store_test_checkout_calls'),
+        }));
       await expect(await browser.$('h2=Payment')).toExist();
+      // The reserved address replaces the form with a compact summary.
+      await expect(shippingAddress).toHaveText(
+        'Grace Hopper\ngrace@example.com\n1 Navy Way\nNew York, NY 10001'
+      );
+      await expect(await browser.$('input[name="name"]')).not.toExist();
+      // Edit opens the reserved address, not what was typed while reserving.
+      await (await browser.$('button=Edit')).click();
+      await expect(await browser.$('input[name="name"]')).toHaveValue(
+        'Grace Hopper'
+      );
+      await (await browser.$('button=Cancel')).click();
       assert.strictEqual(
         await browser.execute(() =>
           sessionStorage.getItem('__store_test_checkout_calls')
@@ -396,17 +475,137 @@ describe('store page', () => {
       await browser.refresh();
       await BasePage.waitForAppReady();
       await expect(await browser.$('h2=Payment')).toExist();
-      await expect(await browser.$('input[name="name"]')).toHaveValue(
-        'Grace Hopper'
+      await expect(shippingAddress).toHaveText('Grace Hopper', {
+        containing: true,
+      });
+      assert.deepStrictEqual(await testCalls(), {
+        canceled: null,
+        checkout: '1',
+      });
+
+      // Editing reopens the filled form and hides payment. Canceling the edit,
+      // or saving the same address, keeps the reservation.
+      await (await browser.$('button=Edit')).click();
+      const addressLine1 = await browser.$('input[name="address-line1"]');
+      await expect(addressLine1).toHaveValue('1 Navy Way');
+      await expect(await browser.$('input[name="name"]')).toBeFocused();
+      await expect(await browser.$('h2=Payment')).not.toExist();
+      await addressLine1.setValue('2 Navy Way');
+      await (await browser.$('button=Cancel')).click();
+      await expect(shippingAddress).toHaveText('1 Navy Way', {
+        containing: true,
+      });
+      await expect(await browser.$('h2=Payment')).toExist();
+      await (await browser.$('button=Edit')).click();
+      await expect(addressLine1).toHaveValue('1 Navy Way');
+      await (await browser.$('button=Continue to payment')).click();
+      await expect(shippingAddress).toHaveText('1 Navy Way', {
+        containing: true,
+      });
+      assert.deepStrictEqual(await testCalls(), {
+        canceled: null,
+        checkout: '1',
+      });
+
+      // A new address cancels the order and reserves the same items again
+      // with new credentials, even after the cart changed and a reload
+      // followed failed replacement attempts. The reload restores the
+      // address of the latest attempt.
+      await browser.execute(() =>
+        sessionStorage.setItem(
+          'devopsrockstars.store.cart',
+          JSON.stringify([{variantId: 'hat-5950-7-1-8', quantity: 2}])
+        )
+      );
+      await browser.refresh();
+      await BasePage.waitForAppReady();
+      await (await browser.$('button=Edit')).click();
+      await addressLine1.setValue('2 Navy Way');
+      await (await browser.$('input[name="address-line2"]')).setValue('Apt 4');
+      const busyStatus = await browser.$(
+        'p=The store is busy. Please try again in a few minutes.'
+      );
+      await (await browser.$('button=Continue to payment')).click();
+      await expect(busyStatus).toExist();
+      const addressLine2 = await browser.$('input[name="address-line2"]');
+      await addressLine2.setValue('Apt 5');
+      await (await browser.$('button=Continue to payment')).click();
+      await browser.waitUntil(async () => (await testCalls()).checkout === '3');
+      await expect(busyStatus).toExist();
+      await browser.refresh();
+      await BasePage.waitForAppReady();
+      await expect(addressLine1).toHaveValue('2 Navy Way');
+      await expect(addressLine2).toHaveValue('Apt 5');
+      await expect(
+        await browser.$('span=DevOps Rockstars 59FIFTY — 7 1/4 × 1')
+      ).toExist();
+      await (await browser.$('button=Continue to payment')).click();
+      await expect(shippingAddress).toHaveText('2 Navy Way, Apt 5', {
+        containing: true,
+      });
+      await expect(await browser.$('h2=Payment')).toExist();
+      assert.deepStrictEqual(await testCalls(), {
+        canceled: `${orderId} order-token`,
+        checkout: '4',
+      });
+      const replacement = await browser.execute(
+        id => ({
+          request: JSON.parse(
+            sessionStorage.getItem('__store_test_checkout_body') ?? 'null'
+          ),
+          pending: JSON.parse(
+            sessionStorage.getItem('devopsrockstars.store.pending-checkout') ??
+              'null'
+          ),
+          token: sessionStorage.getItem(`devopsrockstars.store.order.${id}`),
+          draft: sessionStorage.getItem('devopsrockstars.store.shipping-draft'),
+        }),
+        replacementOrderId
+      );
+      assert.deepStrictEqual(replacement.request.items, [
+        {variantId: 'hat-5950-7-1-4', quantity: 1},
+      ]);
+      assert.strictEqual(
+        replacement.request.shipping.addressLine1,
+        '2 Navy Way'
+      );
+      assert.strictEqual(replacement.request.shipping.addressLine2, 'Apt 5');
+      assert.deepStrictEqual(
+        replacement.pending.shipping,
+        replacement.request.shipping
       );
       assert.strictEqual(
-        await browser.execute(() =>
-          sessionStorage.getItem('__store_test_checkout_calls')
-        ),
-        '1'
+        replacement.pending.checkout.orderId,
+        replacementOrderId
+      );
+      assert.strictEqual(
+        replacement.pending.checkout.clientSecret,
+        'pi_replacement_secret_test'
+      );
+      assert.strictEqual(replacement.token, 'replacement-token');
+      assert.strictEqual(replacement.draft, null);
+
+      // The address stays locked while the payment form is busy, and unlocks
+      // once that work fails.
+      await browser.execute(() =>
+        sessionStorage.setItem('__store_test_cancel_fails', 'true')
+      );
+      const edit = await browser.$('button=Edit');
+      await expect(edit).toBeEnabled();
+      await (await browser.$('button=Cancel checkout')).click();
+      await expect(await browser.$('button=Canceling…')).toExist();
+      await expect(edit).toBeDisabled();
+      await expect(
+        await browser.$(
+          'p=The payment is already processing and cannot be canceled here.'
+        )
+      ).toExist();
+      await expect(edit).toBeEnabled();
+      await browser.execute(() =>
+        sessionStorage.removeItem('__store_test_cancel_fails')
       );
 
-      await BasePage.openStaging(`store/receipt?order=${orderId}`);
+      await BasePage.openStaging(`store/receipt?order=${replacementOrderId}`);
       await expect(
         await browser.$('p=Thank you. Your payment is complete.')
       ).toExist();
