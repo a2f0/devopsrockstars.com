@@ -5,6 +5,7 @@
     "": {
       "name": "devopsrockstars",
       "devDependencies": {
+        "@a2f0/agent-tool": "0.1.4",
         "@biomejs/biome": "2.5.15",
         "@tsconfig/strictest": "2.0.8",
         "@types/bun": "1.4.2",
@@ -12,7 +13,6 @@
         "@types/node": "26.6.4",
         "@types/react": "19.3.0",
         "@types/react-dom": "19.3.0",
-        "agent-tool": "github:a2f0/agent-tool#ef1a91300c347ac13a1cb163d85ad734bfe81bf9",
         "knip": "6.39.0",
         "markdownlint-cli2": "0.23.3",
         "typescript": "7.0.2",
@@ -30,9 +30,9 @@
       "name": "@devopsrockstars/frontend",
       "version": "0.1.0",
       "dependencies": {
+        "@a2f0/skyline": "0.1.5",
         "@devopsrockstars/shared-types": "workspace:*",
         "@stripe/stripe-js": "10.0.0",
-        "chicago-skyline": "github:a2f0/skyline#d7406d2aadf64ec32d88954d297cc03379fe2dc2",
         "leaflet": "1.9.4",
         "react": "19.3.0",
         "react-dom": "19.3.0",
@@ -58,6 +58,10 @@
     "expect@30.5.2": "patches/expect@30.5.2.patch",
   },
   "packages": {
+    "@a2f0/agent-tool": ["@a2f0/agent-tool@0.1.4", "", { "bin": { "agent-tool": "src/index.ts" } }, "sha512-GeeE+LwLxL6NQgft3Nn1J+46pdSACJz3lzCQUayaTh/XIjbwcI2Dzg7xUpJ1apSZAWokapD6wgkEfBxEBPHsgA=="],
+
+    "@a2f0/skyline": ["@a2f0/skyline@0.1.5", "", { "dependencies": { "@types/three": "0.186.0" }, "peerDependencies": { "three": "~0.186.0" }, "optionalPeers": ["three"] }, "sha512-O8Y9Lr00DF18R7VHFhEb84uAiUOuhfNuprgNd/Wxq5o/u3+5UpfHBTPKTN+7iceA+9jxDr+QQgV3FLnmAzXzFA=="],
+
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "7.29.7", "js-tokens": "4.0.0", "picocolors": "1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.29.7", "", {}, "sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg=="],
@@ -478,8 +482,6 @@
 
     "agent-base": ["agent-base@7.1.4", "", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
 
-    "agent-tool": ["agent-tool@github:a2f0/agent-tool#ef1a913", { "bin": { "agent-tool": "src/index.ts" } }, "a2f0-agent-tool-ef1a913", "sha512-+8jnTz1SurL0t37b+3Yj8BCjpcdzwX5GZVIOWw6FE6T8/LKZOxWm40BEE6XNcgGLBd472SoBbzjDTvJYy3JVyg=="],
-
     "ansi-regex": ["ansi-regex@6.4.0", "", {}, "sha512-KzTVk2tCWAHtYrvvvaP8bJKJq2pVinhLcGEQdtLIYPbmNGNyYe8QwNaTUYQp2J7/vIsUKt5QCqAfUkYyG9DkOw=="],
 
     "ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
@@ -539,8 +541,6 @@
     "cheerio": ["cheerio@1.2.0", "", { "dependencies": { "cheerio-select": "2.1.0", "dom-serializer": "2.0.0", "domhandler": "5.0.3", "domutils": "3.2.2", "encoding-sniffer": "0.2.1", "htmlparser2": "10.1.0", "parse5": "7.3.0", "parse5-htmlparser2-tree-adapter": "7.1.0", "parse5-parser-stream": "7.1.2", "undici": "7.30.0", "whatwg-mimetype": "4.0.0" } }, "sha512-WDrybc/gKFpTYQutKIK6UvfcuxijIZfMfXaYm8NMsPQxSYvf+13fXUJ4rztGGbJcBQ/GF55gvrZ0Bc0bj/mqvg=="],
 
     "cheerio-select": ["cheerio-select@2.1.0", "", { "dependencies": { "boolbase": "1.0.0", "css-select": "5.2.2", "css-what": "6.2.2", "domelementtype": "2.3.0", "domhandler": "5.0.3", "domutils": "3.2.2" } }, "sha512-9v9kG0LvzrlcungtnJtpGNxY+fzECQKhK4EGJX2vByejiMX84MFNQw4UxPJl3bFbTMw+Dfs37XaIkCwTZfLh4g=="],
-
-    "chicago-skyline": ["chicago-skyline@github:a2f0/skyline#d7406d2", { "dependencies": { "@types/three": "0.186.0" }, "peerDependencies": { "three": "~0.186.0" }, "optionalPeers": ["three"] }, "a2f0-skyline-d7406d2", "sha512-iOzrf4oXotTxjxqRUXAjBaySdgduLtDfV2thFFogW8KC/3Xr1cTuDEycZfWqID44DYfaDZlrLqrFTMhtRJLlCA=="],
 
     "ci-info": ["ci-info@4.4.0", "", {}, "sha512-77PSwercCZU2Fc4sX94eF8k8Pxte6JAwL4/ICZLFjJLqegs7kCuAsqqj/70NQF6TvDpgFjkubQB2FW2ZZddvQg=="],
 

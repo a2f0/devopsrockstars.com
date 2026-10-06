@@ -2,7 +2,7 @@
 import {cp, mkdir, mkdtemp, readdir, rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {copySkylineAssets} from 'chicago-skyline/build';
+import {copySkylineAssets} from '@a2f0/skyline/build';
 import {headersFile, robotsMetaTags, robotsTxt} from '../buildAssets';
 import {parseSiteEnvironment, type SiteEnvironment} from '../src/environment';
 import type {FeatureFlags} from '../src/featureFlags';
