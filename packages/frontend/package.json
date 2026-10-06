@@ -20,9 +20,9 @@
     "webdriverio": "9.32.0"
   },
   "dependencies": {
+    "@a2f0/skyline": "0.1.5",
     "@devopsrockstars/shared-types": "workspace:*",
     "@stripe/stripe-js": "10.0.0",
-    "chicago-skyline": "github:a2f0/skyline#d7406d2aadf64ec32d88954d297cc03379fe2dc2",
     "leaflet": "1.9.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",

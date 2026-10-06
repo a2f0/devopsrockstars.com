@@ -6,10 +6,12 @@ from [bun.sh](https://bun.sh), then run `bun install`. Commit `bun.lock` with
 dependency changes. Development rebuilds on source edits; refresh the browser
 to load the updated bundle.
 
-`bun install` explicitly builds the commit-pinned `chicago-skyline` GitHub
-dependency with this repo's Bun and TypeScript tools. Dependency lifecycle
-scripts remain disabled. The resulting package includes its own viewer assets;
-no sibling checkout is required.
+The interactive 3D skyline comes from the exact-pinned
+[`@a2f0/skyline`](https://www.npmjs.com/package/@a2f0/skyline) npm package,
+which ships built JavaScript and its own viewer assets, so installs run no
+build step and need no sibling checkout. `bun run skyline:check` reports
+whether the pin matches npm's latest release, and `bun run skyline:update`
+moves it there; shipping a PR runs the update (see `AGENTS.md`).
 
 ## Workspace layout
 
@@ -24,7 +26,8 @@ deployment commands remain stable.
 
 ## Agent tooling
 
-PR tooling comes from the commit-pinned [agent-tool package](https://github.com/a2f0/agent-tool).
+PR tooling comes from the exact-pinned
+[`@a2f0/agent-tool`](https://github.com/a2f0/agent-tool) npm package.
 `agent-tool.json` sets the conventional title limit and the required
 `code-quality` check in `Github Actions`. The managed shared skills in
 `.agents/skills` and `.claude/skills` provide review, PR creation, shipping, and
@@ -40,9 +43,9 @@ bun run agents:check
 
 Invoke the installed executable directly when passing an empty merge subject;
 `bun run` drops empty positional arguments. To update the tooling, review the
-upstream change, pin its full merged commit SHA in `package.json`, run
-`bun install`, then `bun run agents:sync`. Commit the lockfile, installed skills,
-and `.agent-tool-skills.json` together. Hooks and CI reject missing or stale
+upstream release, run `bun add --dev --exact @a2f0/agent-tool@<version>`, then
+`bun run agents:sync`. Commit the manifest, lockfile, installed skills, and
+`.agent-tool-skills.json` together. Hooks and CI reject missing or stale
 skills. The shared package owns its tests; application checks stay in this repo.
 
 ## Development
@@ -189,12 +192,12 @@ adds a `noindex, nofollow` meta tag, an `X-Robots-Tag` response header, and a
 engines.
 
 With `skyline3d` enabled, Home embeds the shared interactive 3D skyline from
-[a2f0/skyline](https://github.com/a2f0/skyline). Its assets are included only in
-builds with that flag enabled, and its iframe is removed when leaving Home. If
-`store` is also enabled, the original SVG stays visible while the background hat
-preview prepares; the 3D skyline starts after preparation succeeds or fails so
-the two models build in sequence. With the store disabled, the 3D skyline starts
-directly. Disabling `skyline3d` keeps the original `/static/image/skyline.svg`.
+`@a2f0/skyline` ([a2f0/skyline](https://github.com/a2f0/skyline)). Its assets
+are included only in builds with that flag enabled, and its iframe is removed
+when leaving Home. If `store` is also enabled, the original SVG stays visible
+while the background hat preview prepares; the 3D skyline starts after
+preparation succeeds or fails so the two models build in sequence. With the
+store disabled, the 3D skyline starts directly. Disabling `skyline3d` keeps the original `/static/image/skyline.svg`.
 
 Cloudflare prepends its own managed `robots.txt` block whose `User-agent: *`
 group merges with ours, and `Allow` wins that tie, so the header and meta tag

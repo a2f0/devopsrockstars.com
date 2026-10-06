@@ -45,11 +45,12 @@ When addressing Gemini or reviewer feedback:
 
 ## Repo Validation Commands
 
-Use the commit-pinned shared `agent-tool` package through `bun run agent-tool`.
-Its managed skills in `.agents/skills` and `.claude/skills` own the PR workflow;
-`agent-tool.json` supplies title and required CI policy. Update installed skills
-with `bun run agents:sync` after changing the dependency pin, and check them
-with `bun run agents:check`. Do not edit managed skills locally.
+Use the exact-pinned `@a2f0/agent-tool` npm package through
+`bun run agent-tool`. Its managed skills in `.agents/skills` and
+`.claude/skills` own the PR workflow; `agent-tool.json` supplies title and
+required CI policy. Update installed skills with `bun run agents:sync` after
+changing the dependency pin, and check them with `bun run agents:check`. Do not
+edit managed skills locally.
 The project `address-gemini-feedback` skill handles review-thread replies;
 `scripts/check-agent-skills-in-sync.mjs` keeps project skills identical between
 `.agents/skills` and `.claude/skills` through the pre-commit hook.
@@ -73,6 +74,15 @@ Use the shared `$ship-pr` skill. Run Markdown lint, compilation, unit tests,
 format/lint, and pre-commit checks before shipping; run browser tests locally
 when application or browser behavior changes. CI runs the full browser suite.
 Integrate changed bases with normal merges and never force-push.
+
+Keep `@a2f0/skyline` on its latest npm release while shipping. Before the first
+review, run `bun run skyline:update` on the feature branch. When it moves the
+pin, commit `packages/frontend/package.json` and `bun.lock` as
+`chore(deps): update @a2f0/skyline to <version>`, run browser tests locally,
+include that commit in the reviewed HEAD, and mention the update in the PR
+description. A release published after the first review waits for the next
+shipped PR. `bun run skyline:check` reports whether the pin is current without
+changing it; CI does not run it, so an upstream release never fails a build.
 
 For Codex use Claude as the independent reviewer, falling back to the independent
 Codex CLI if unavailable. Require a complete non-blocking verdict on the final

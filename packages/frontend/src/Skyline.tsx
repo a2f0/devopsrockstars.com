@@ -1,4 +1,4 @@
-import {mountSkyline} from 'chicago-skyline';
+import {mountSkyline} from '@a2f0/skyline';
 import React, {useEffect, useRef} from 'react';
 import styled from 'styled-components';
 import {features} from './featureFlags';
