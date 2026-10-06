@@ -27,7 +27,7 @@
     "lint": "bun run --bun biome lint --fix",
     "lint:md": "bun run --bun markdownlint-cli2",
     "compile": "bun run --bun tsc --noEmit",
-    "unit": "bun test --timeout 60000 packages/backend/src packages/frontend/src packages/frontend/buildAssets.test.ts packages/frontend/tooling",
+    "unit": "bun test --timeout 60000 packages/backend/src packages/frontend/src packages/frontend/buildAssets.test.ts packages/frontend/tooling scripts",
     "deploy:staging": "bun scripts/deploy.ts staging",
     "deploy:prod": "bun scripts/deploy.ts prod",
     "db:migrate:staging": "bun run --filter @devopsrockstars/backend db:migrate:staging",
