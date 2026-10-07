@@ -97,7 +97,12 @@ export async function deploymentInputs(root: string, committedHead?: string) {
     'node_modules/wrangler/wrangler-dist/cli.js',
   ];
   for (const filename of inputs.sort()) {
-    const contents = await Bun.file(path.join(root, filename)).arrayBuffer();
+    const file = Bun.file(path.join(root, filename));
+    if (!(await file.exists())) {
+      digest.update(`${filename}\0absent\0`);
+      continue;
+    }
+    const contents = await file.arrayBuffer();
     digest.update(`${filename}\0${contents.byteLength}\0`);
     digest.update(contents);
   }

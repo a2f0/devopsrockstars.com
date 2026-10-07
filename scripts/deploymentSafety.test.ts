@@ -411,6 +411,9 @@ test('generated assets and the installed Wrangler invalidate captured inputs', a
     expect(await deploymentInputs(repository, head)).toBe(initial);
     await Bun.write(tool, 'changed CLI');
     expect(await deploymentInputs(repository, head)).not.toBe(initial);
+    const beforeDeletion = await deploymentInputs(repository);
+    await rm(path.join(repository, 'README.md'));
+    expect(await deploymentInputs(repository)).not.toBe(beforeDeletion);
   } finally {
     await rm(temporary, {recursive: true, force: true});
   }
