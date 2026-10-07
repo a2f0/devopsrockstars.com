@@ -29,7 +29,7 @@ When addressing Gemini or reviewer feedback:
 - Never use top-level PR comments for review feedback replies.
 - Never use `gh pr review` to reply to individual review comments.
 - Use the PR comment reply endpoint:
-  - `POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies`
+  - `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies`
 - Tag `@gemini-code-assist` in replies intended for Gemini.
 - Include what changed and the commit SHA when relevant.
 

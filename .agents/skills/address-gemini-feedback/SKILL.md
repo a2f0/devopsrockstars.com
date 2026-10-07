@@ -48,7 +48,7 @@ Resolve Gemini review comments directly in GitHub PR threads.
    ```bash
    gh api -X POST \
      -H "Accept: application/vnd.github+json" \
-     "/repos/$OWNER/$REPO_NAME/pulls/comments/$COMMENT_ID/replies" \
+     "/repos/$OWNER/$REPO_NAME/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
      -f body="@gemini-code-assist Addressed in $COMMIT_SHA: <short summary>."
    ```
 
