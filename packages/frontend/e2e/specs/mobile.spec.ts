@@ -101,7 +101,9 @@ describe('mobile layouts', () => {
           })
         );
         await expectLayout(width);
-        await expect(await browser.$('#skyline > iframe')).not.toExist();
+        await expect(
+          await browser.$('#skyline > [role="region"]')
+        ).not.toExist();
         await expect(await browser.$('a[href="/store"]')).not.toExist();
         await expect(await browser.$('a[href="/search"]')).not.toExist();
       }

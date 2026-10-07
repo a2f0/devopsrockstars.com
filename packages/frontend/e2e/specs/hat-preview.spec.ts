@@ -241,7 +241,12 @@ describe('3D hat preview', () => {
         ...args
       ) {
         const context = getContext.call(this, type, ...args);
-        if (context && type === 'webgl2' && this.hasAttribute('aria-label')) {
+        // The Home skyline renders its own labelled canvas in this document.
+        if (
+          context &&
+          type === 'webgl2' &&
+          this.matches('canvas[aria-label$="interactive 3D preview"]')
+        ) {
           contexts.add(context);
           document.documentElement.dataset['previewContexts'] = String(
             contexts.size
@@ -344,7 +349,11 @@ describe('3D hat preview', () => {
         ...args
       ) {
         const context = getContext.call(this, type, ...args);
-        if (armed && type === 'webgl2' && this.hasAttribute('aria-label')) {
+        if (
+          armed &&
+          type === 'webgl2' &&
+          this.matches('canvas[aria-label$="interactive 3D preview"]')
+        ) {
           armed = false;
           this.addEventListener('webglcontextlost', () => {
             document.documentElement.setAttribute(

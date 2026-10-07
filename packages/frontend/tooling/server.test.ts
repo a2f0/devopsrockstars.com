@@ -113,6 +113,9 @@ test('each environment serves skyline assets only when its flag is enabled', asy
   ] as const) {
     for (const pathname of [
       '/static/skyline/index.html',
+      '/static/skyline/skyline-viewer.js',
+      '/static/skyline/viewer.css',
+      '/static/skyline/three-engine.js',
       '/static/skyline/skyline-3d.html',
       '/static/skyline/skyline-3d.js',
       '/static/skyline/models/crain-geographic.js',
