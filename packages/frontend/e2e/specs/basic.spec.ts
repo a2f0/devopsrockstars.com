@@ -39,7 +39,9 @@ describe('index page', () => {
       '/static/image/skyline.svg'
     );
     await expect(
-      await browser.$('iframe[title="Interactive Chicago skyline"]')
+      await browser.$(
+        '[role="region"][aria-label="Interactive Chicago skyline"]'
+      )
     ).not.toExist();
     assert.deepStrictEqual(
       await browser.execute(() =>

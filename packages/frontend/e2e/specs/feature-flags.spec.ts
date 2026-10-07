@@ -66,11 +66,15 @@ describe('independent feature flags', () => {
             flags.search
           );
           if (flags.skyline3d) {
-            await (await browser.$('#skyline > iframe')).waitForExist();
+            await (
+              await browser.$('#skyline > [role="region"]')
+            ).waitForExist();
             await expect(await browser.$('img#skyline')).not.toExist();
           } else {
             await expect(await browser.$('img#skyline')).toExist();
-            await expect(await browser.$('#skyline > iframe')).not.toExist();
+            await expect(
+              await browser.$('#skyline > [role="region"]')
+            ).not.toExist();
           }
           if (flags.store) {
             await browser.waitUntil(() =>
