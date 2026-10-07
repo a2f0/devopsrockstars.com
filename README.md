@@ -316,6 +316,10 @@ Keep the existing Worker names, domains and database bindings during maintenance
 A rename or retirement is a separate infrastructure operation. The dependency
 upgrade workflow never deletes, replaces, recreates or retires a resource; its
 preview guard holds any identity change.
+After a separately reviewed rename, confirm the new Worker serves traffic before
+retiring the predecessor. The old Worker keeps its cron trigger and D1 binding
+until it is retired; its secrets cannot be read back, so provision them on the
+new Worker before cutover.
 
 ### Infrastructure
 

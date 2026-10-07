@@ -34,7 +34,7 @@ test('enabled skyline builds copy every published viewer asset together', async 
   }
 });
 
-test('disabled skyline builds do not retain a previous viewer asset set', async () => {
+test('disabled skyline bundles omit viewer assets', async () => {
   const assets = await bundleFrontend({
     environment: 'production',
     featureFlags: {store: false, search: false, skyline3d: false},

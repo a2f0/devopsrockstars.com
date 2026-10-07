@@ -71,6 +71,12 @@ integration does not justify forcing a security override into the lock.
 
 ## Deployment preview gate
 
+This guard ships atomically with the dependency sweep because merging the pins
+alone would trigger the existing production workflow, which previously applied
+remote D1 migrations and published Workers without a complete account preview.
+The guard is a prerequisite for this sweep's production release, and the PR
+description calls out the operational change for reviewers.
+
 All owned remote deploy and migration commands route through `scripts/deploy.ts`,
 including workspace entrypoints and GitHub Actions. Set the real
 `CLOUDFLARE_ACCOUNT_ID` and API token; CI reads the account ID from the repository
@@ -90,6 +96,12 @@ configuration: editing a Worker name, D1 binding, namespace, runtime date,
 domain, cron, or secret set requires its own reviewed infrastructure change
 and a new complete live preview. Deriving expectations from the changed config
 would let an accidental resource replacement pass this guard.
+The deployment calls Wrangler with `--keep-vars` so publishing cannot remove
+existing Worker variables that are absent from the new bundle; the live binding
+inventory must still match the reviewed configuration before either upload.
+The account's Workers Domains API returned `result_info` with `page: 1`,
+`count: 27`, `per_page: 27`, and `total_count: 27` in the authenticated
+2026-10-07 preview. A different or incomplete page holds deployment.
 The production store flag is off, and its existing Worker has only
 `CHECKOUT_HASH_SECRET`; staging also has the three Stripe secrets. The guard
 preserves those exact live secret sets. A production store launch needs a
@@ -116,6 +128,9 @@ They do not apply SQL. New migrations need a separate reviewed rollout with a
 scoped apply command and meaningful execution preview before
 this restriction can be changed. Local disposable database tests retain explicit
 `--local` commands.
+There are no pending migrations in either current remote database. Blocking a
+future deployment until its schema rollout is independently reviewed is
+intentional; the former unscoped remote apply command is not an approved path.
 
 `--dry-run` now means that the complete bundle and live-resource gate succeeded,
 not just that uploads were disabled. A bundle alone and fixture metadata are not

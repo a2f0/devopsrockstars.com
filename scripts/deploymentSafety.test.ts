@@ -411,6 +411,7 @@ test('incomplete API inventory and sensitive errors fail closed without leaking 
         success: true,
         errors: null,
         result: [{hostname: 'staging.devopsrockstars.com'}],
+        // The live account's Workers Domains response used per_page: 27 on 2026-10-07.
         result_info: {page: 1, per_page: 27, count: 1, total_count: 1},
       })
     );
@@ -488,8 +489,8 @@ async function committedFixture() {
       throw new Error('Cannot create local committed fixture');
     return result.stdout.toString().trim();
   };
-  // Reuse the repository's existing commit without creating or signing a commit.
-  run(['clone', '--shared', '--no-checkout', root, repository]);
+  // Copy the committed HEAD without relying on shared objects from a shallow CI checkout.
+  run(['clone', '--no-local', '--no-checkout', root, repository]);
   run(['-C', repository, 'checkout', '--detach', 'HEAD']);
   return {
     temporary,

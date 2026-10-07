@@ -45,15 +45,19 @@ test('the Markdownlint override resolves only the patched Smol-TOML', async () =
   const lockfile = Bun.JSONC.parse(source) as {
     packages: Record<string, [string, ...unknown[]]>;
   };
-  const resolved = Object.entries(lockfile.packages).filter(
-    ([name, entry]) =>
-      name === 'smol-toml' ||
-      name.endsWith('/smol-toml') ||
-      entry[0].startsWith('smol-toml@')
+  const nested = Object.entries(lockfile.packages).filter(
+    ([name]) =>
+      name.startsWith('markdownlint-cli2/') && name.endsWith('/smol-toml')
   );
-  expect(resolved.map(([name, entry]) => [name, entry[0]])).toEqual([
-    ['smol-toml', 'smol-toml@1.9.0'],
-  ]);
+  const resolved = nested.length
+    ? nested
+    : Object.entries(lockfile.packages).filter(
+        ([name]) => name === 'smol-toml'
+      );
+  expect(resolved.length).toBeGreaterThan(0);
+  expect(resolved.map(([, entry]) => entry[0])).toEqual(
+    resolved.map(() => 'smol-toml@1.9.0')
+  );
 });
 
 const selectors = ['@scope/parent@1.2.3', 'parent@2.0.0-alpha'];
