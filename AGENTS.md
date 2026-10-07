@@ -84,6 +84,10 @@ include that commit in the reviewed HEAD, and mention the update in the PR
 description. A release published after the first review waits for the next
 shipped PR. `bun run skyline:check` reports whether the pin is current without
 changing it; CI does not run it, so an upstream release never fails a build.
+The Home skyline renders with the frontend's `three` through
+`@a2f0/skyline/three`, so keep `three` within the skyline's `three` peer range
+when updating either; the staging browser tests fail if the viewer loads its
+own copy.
 
 For Codex use Claude as the independent reviewer, falling back to the independent
 Codex CLI if unavailable. Require a complete non-blocking verdict on the final
@@ -299,7 +303,8 @@ Flag changes require a new deployment. See README's Feature flags section for
 the update workflow and registry conventions.
 
 - Store/search flags control their links and routes. The `skyline3d` flag
-  controls the 3D viewer and asset inclusion, with the SVG used when off. Each flag is
+  controls the 3D viewer and asset inclusion, with the SVG used when off or when
+  the viewer cannot start. Each flag is
   independent; do not couple a flag's value to whether the environment is staging
 - When `store` and `skyline3d` are both on, hat preparation finishes before the
   skyline starts to avoid competing model builds; the SVG stays visible meanwhile

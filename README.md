@@ -191,10 +191,14 @@ adds a `noindex, nofollow` meta tag, an `X-Robots-Tag` response header, and a
 `robots.txt` that disallows everything, so only production is offered to search
 engines.
 
-With `skyline3d` enabled, Home embeds the shared interactive 3D skyline from
-`@a2f0/skyline` ([a2f0/skyline](https://github.com/a2f0/skyline)). Its assets
-are included only in builds with that flag enabled, and its shadow-root viewer is destroyed
-when leaving Home. If `store` is also enabled, the original SVG stays visible
+With `skyline3d` enabled, Home mounts the shared interactive 3D skyline from
+`@a2f0/skyline` ([a2f0/skyline](https://github.com/a2f0/skyline)) in the page
+itself, inside a shadow root, and gives it the site's own three.js through
+`@a2f0/skyline/three`, so the skyline and the hat preview share one engine. Its
+assets are included only in builds with that flag enabled. Leaving Home
+destroys the viewer and releases its WebGL contexts. If the 3D skyline cannot
+start, as without WebGL 2, Home shows the original SVG and the browser console
+says why. If `store` is also enabled, the original SVG stays visible
 while the background hat preview prepares; the 3D skyline starts after
 preparation succeeds or fails so the two models build in sequence. With the
 store disabled, the 3D skyline starts directly. Disabling `skyline3d` keeps the original `/static/image/skyline.svg`.

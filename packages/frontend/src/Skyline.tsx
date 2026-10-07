@@ -1,6 +1,5 @@
 import {mountSkyline} from '@a2f0/skyline';
-import * as three from '@a2f0/skyline/three';
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styled from 'styled-components';
 import {features} from './featureFlags';
 import {useHatPreviewPreparing} from './store/PreparedHatPreview';
@@ -33,25 +32,22 @@ const InteractiveSkyline = styled(FullScreenSkyline)`
 function Skyline3d() {
   const container = useRef<HTMLDivElement>(null);
   const preparingHat = useHatPreviewPreparing();
+  const [unavailable, setUnavailable] = useState(false);
   useEffect(() => {
     // Avoid two expensive model builds competing for CPU/GPU startup time.
     // The SVG stays visible until the parked hat settles, including failure.
-    if (preparingHat || !container.current) return;
+    if (preparingHat || unavailable || !container.current) return;
     const viewer = mountSkyline(container.current, {
       assetsUrl: '/static/skyline/',
-      three,
+      // Share the hat preview's three.js instead of loading a second engine.
+      three: import('@a2f0/skyline/three'),
     });
-    void (async () => {
-      try {
-        await viewer.ready;
-        viewer.element.dataset['skylineReady'] = 'true';
-      } catch {
-        // The shared viewer shows its error and keeps the drawing reachable.
-      }
-    })();
+    // The viewer logs why it could not start. Show the original SVG instead
+    // of its in-place error. A destroyed viewer's promise never settles.
+    viewer.ready.catch(() => setUnavailable(true));
     return () => viewer.destroy();
-  }, [preparingHat]);
-  if (preparingHat) return <OriginalSkyline />;
+  }, [preparingHat, unavailable]);
+  if (preparingHat || unavailable) return <OriginalSkyline />;
   return <InteractiveSkyline id="skyline" ref={container} />;
 }
 

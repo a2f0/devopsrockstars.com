@@ -5,7 +5,7 @@
     "": {
       "name": "devopsrockstars",
       "devDependencies": {
-        "@a2f0/agent-tool": "0.1.9",
+        "@a2f0/agent-tool": "0.1.10",
         "@biomejs/biome": "2.5.15",
         "@tsconfig/strictest": "2.0.8",
         "@types/bun": "1.4.2",
@@ -30,7 +30,7 @@
       "name": "@devopsrockstars/frontend",
       "version": "0.1.0",
       "dependencies": {
-        "@a2f0/skyline": "0.2.1",
+        "@a2f0/skyline": "0.2.2",
         "@devopsrockstars/shared-types": "workspace:*",
         "@stripe/stripe-js": "10.0.0",
         "leaflet": "1.9.4",
@@ -64,9 +64,9 @@
     },
   },
   "packages": {
-    "@a2f0/agent-tool": ["@a2f0/agent-tool@0.1.9", "", { "bin": { "agent-tool": "src/index.ts" } }, "sha512-Q8tsiXywPdXeH5I9d5XqslrFm4YQT352Xx0vOrmnFPoHfBUlqInVUSNibzARB4Nzodvysl5yccsRHCGF51SrhQ=="],
+    "@a2f0/agent-tool": ["@a2f0/agent-tool@0.1.10", "", { "bin": { "agent-tool": "src/index.ts" } }, "sha512-kuAMx7swbLNU86c6fbSUgs88rXDLOvbtVlABEqaJVrsWdNetsg1KEkURZZlyVZq7Jjl//Koij/WoRiQ2RAmZ7Q=="],
 
-    "@a2f0/skyline": ["@a2f0/skyline@0.2.1", "", { "dependencies": { "@types/three": "0.186.0" }, "peerDependencies": { "three": "~0.186.0" }, "optionalPeers": ["three"] }, "sha512-yn/ijV88+2nk1+w6aSodAWx9B957cFKDy5PBKkp9h8xANhVv0JcCc5DJonPLT/npKWi8J2fNkcj5ddw4N8DnRw=="],
+    "@a2f0/skyline": ["@a2f0/skyline@0.2.2", "", { "dependencies": { "@types/three": "0.186.0" }, "peerDependencies": { "three": "~0.186.0" }, "optionalPeers": ["three"] }, "sha512-IHyI+zy3WoJW2lgXoBP+7q5KvoBMzgCleyK/OCwC8XG6qpxiSnti6Mbhohecpe07eBidDLAb3TJTZwRC0RGWIg=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "7.29.7", "js-tokens": "4.0.0", "picocolors": "1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
 
