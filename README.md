@@ -257,6 +257,11 @@ need a separately reviewed execution preview before any mutation.
 4. Add the Stripe keys as Worker secrets, once per environment. Staging takes
    the Stripe test keys and production the live keys.
 
+   The current production Worker has only `CHECKOUT_HASH_SECRET` while its
+   store flag is off. Provisioning live Stripe secrets and enabling that flag
+   require a separate reviewed rollout; dependency maintenance preserves the
+   current secret set.
+
    ```shell
    for secret in STRIPE_PUBLISHABLE_KEY STRIPE_SECRET_KEY \
      STRIPE_WEBHOOK_SECRET CHECKOUT_HASH_SECRET; do

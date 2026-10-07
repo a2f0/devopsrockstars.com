@@ -86,6 +86,10 @@ compatibility date, disabled `workers.dev`/preview URLs, cron triggers, custom
 domains and zone IDs. It rejects unreviewed resource types, routes, incomplete
 API inventories, missing resources, and identity changes. It rechecks source,
 generated assets and Wrangler inputs plus live identities before each publication.
+The production store flag is off, and its existing Worker has only
+`CHECKOUT_HASH_SECRET`; staging also has the three Stripe secrets. The guard
+preserves those exact live secret sets. A production store launch needs a
+separate reviewed secret and flag rollout.
 Publishing also requires a clean committed tree without assume-unchanged or
 skip-worktree flags. The captured commit must match GitHub Actions' validated
 checkout SHA in CI and remain unchanged before each upload. Preview-only modes

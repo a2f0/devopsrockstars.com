@@ -173,12 +173,14 @@ export async function deploymentTarget(
       bindings,
       secrets:
         workspace === 'backend'
-          ? [
-              'CHECKOUT_HASH_SECRET',
-              'STRIPE_PUBLISHABLE_KEY',
-              'STRIPE_SECRET_KEY',
-              'STRIPE_WEBHOOK_SECRET',
-            ]
+          ? environment === 'prod'
+            ? ['CHECKOUT_HASH_SECRET']
+            : [
+                'CHECKOUT_HASH_SECRET',
+                'STRIPE_PUBLISHABLE_KEY',
+                'STRIPE_SECRET_KEY',
+                'STRIPE_WEBHOOK_SECRET',
+              ]
           : [],
       crons: workspace === 'backend' ? ['* * * * *'] : [],
       domains:
@@ -378,14 +380,21 @@ export function cloudflareReader(
     if (!response.ok)
       throw new Error(`Deployment preview API failed (${response.status})`);
     const body = object(await response.json());
-    if (body['success'] !== true || array(body['errors']).length)
+    if (
+      body['success'] !== true ||
+      (body['errors'] !== null && array(body['errors']).length)
+    )
       throw new Error('Deployment preview API did not succeed');
     if (endpoint === '/workers/domains') {
       const pages = object(body['result_info']);
+      const count = array(body['result']).length;
       if (
-        pages['total_pages'] !== 1 ||
         pages['page'] !== 1 ||
-        pages['total_count'] !== array(body['result']).length
+        pages['total_count'] !== count ||
+        (pages['total_pages'] !== undefined && pages['total_pages'] !== 1) ||
+        (pages['count'] !== undefined && pages['count'] !== count) ||
+        (pages['per_page'] !== undefined &&
+          (typeof pages['per_page'] !== 'number' || pages['per_page'] < count))
       )
         throw new Error('Deployment held: resource inventory is incomplete');
     }

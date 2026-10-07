@@ -14,6 +14,13 @@ const root = path.resolve(import.meta.dir, '..');
 const account = 'a'.repeat(32);
 const zone = 'b'.repeat(32);
 
+test('the disabled production store retains only its existing hash secret', async () => {
+  const production = await deploymentTarget(root, 'prod');
+  const staging = await deploymentTarget(root, 'staging');
+  expect(production.workers.backend.secrets).toEqual(['CHECKOUT_HASH_SECRET']);
+  expect(staging.workers.backend.secrets).toContain('STRIPE_SECRET_KEY');
+});
+
 async function fixture(environment: 'staging' | 'prod' = 'staging') {
   const target = await deploymentTarget(root, environment);
   const metadata: Record<string, unknown> = {
@@ -245,6 +252,24 @@ test('incomplete API inventory and sensitive errors fail closed without leaking 
   );
   try {
     await expect(read('/workers/domains')).rejects.toThrow('incomplete');
+    fetch.mockResolvedValue(
+      Response.json({
+        success: true,
+        errors: null,
+        result: [],
+        result_info: {page: 1, total_pages: 1, total_count: 0},
+      })
+    );
+    expect(await read('/workers/domains')).toEqual([]);
+    fetch.mockResolvedValue(
+      Response.json({
+        success: true,
+        errors: null,
+        result: [{hostname: 'staging.devopsrockstars.com'}],
+        result_info: {page: 1, per_page: 27, count: 1, total_count: 1},
+      })
+    );
+    expect(await read('/workers/domains')).toHaveLength(1);
     fetch.mockResolvedValue(
       Response.json({
         success: false,
