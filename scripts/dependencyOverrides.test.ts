@@ -40,6 +40,22 @@ test('temporary overrides still match resolved parent versions', async () => {
   assertOverrideParents(Object.keys(overrides), source);
 });
 
+test('the Markdownlint override resolves only the patched Smol-TOML', async () => {
+  const source = await Bun.file(new URL('../bun.lock', import.meta.url)).text();
+  const lockfile = Bun.JSONC.parse(source) as {
+    packages: Record<string, [string, ...unknown[]]>;
+  };
+  const resolved = Object.entries(lockfile.packages).filter(
+    ([name, entry]) =>
+      name === 'smol-toml' ||
+      name.endsWith('/smol-toml') ||
+      entry[0].startsWith('smol-toml@')
+  );
+  expect(resolved.map(([name, entry]) => [name, entry[0]])).toEqual([
+    ['smol-toml', 'smol-toml@1.9.0'],
+  ]);
+});
+
 const selectors = ['@scope/parent@1.2.3', 'parent@2.0.0-alpha'];
 const resolved = {
   nested: [selectors[0]],

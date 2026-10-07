@@ -256,8 +256,9 @@ need a separately reviewed execution preview before any mutation.
    bun run db:check:prod
    ```
 
-4. Add the Stripe keys as Worker secrets, once per environment. Staging takes
-   the Stripe test keys and production the live keys.
+4. Add the Stripe test keys and checkout hash secret to the staging Worker.
+   Set only the checkout hash secret in production for the current disabled
+   store configuration.
 
    The current production Worker has only `CHECKOUT_HASH_SECRET` while its
    store flag is off. Provisioning live Stripe secrets and enabling that flag
@@ -268,8 +269,10 @@ need a separately reviewed execution preview before any mutation.
    for secret in STRIPE_PUBLISHABLE_KEY STRIPE_SECRET_KEY \
      STRIPE_WEBHOOK_SECRET CHECKOUT_HASH_SECRET; do
      bun run --cwd packages/backend --bun wrangler secret put \
-       "$secret" --env prod
+       "$secret" --env staging
    done
+   bun run --cwd packages/backend --bun wrangler secret put \
+     CHECKOUT_HASH_SECRET --env prod
    ```
 
 5. Register `https://store.devopsrockstars.com/api/webhooks/stripe` (and the
