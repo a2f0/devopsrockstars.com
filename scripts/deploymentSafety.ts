@@ -430,7 +430,7 @@ export async function inspectDeployment(
   }
   return canonical(
     identities.sort((a, b) =>
-      String(a['hostname']) < String(b['hostname']) ? -1 : 1
+      String(a['hostname']).localeCompare(String(b['hostname']))
     )
   );
 }
