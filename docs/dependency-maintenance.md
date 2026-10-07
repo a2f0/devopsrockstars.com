@@ -99,9 +99,9 @@ would let an accidental resource replacement pass this guard.
 The deployment calls Wrangler with `--keep-vars` so publishing cannot remove
 existing Worker variables that are absent from the new bundle; the live binding
 inventory must still match the reviewed configuration before either upload.
-The account's Workers Domains API returned `result_info` with `page: 1`,
-`count: 27`, `per_page: 27`, and `total_count: 27` in the authenticated
-2026-10-07 preview. A different or incomplete page holds deployment.
+The account's Workers Domains API returned complete `result_info` pagination
+in the authenticated 2026-10-07 preview. A different or incomplete page holds
+deployment.
 The production store flag is off, and its existing Worker has only
 `CHECKOUT_HASH_SECRET`; staging also has the three Stripe secrets. The guard
 preserves those exact live secret sets. A production store launch needs a
@@ -113,6 +113,10 @@ may inspect an uncommitted local candidate; that proof never authorizes publicat
 Custom Wrangler build hooks are unsupported, so a deployment cannot rerun an
 uninspected build after capturing the preview inputs.
 CI serializes deployments per environment without canceling an active deployment.
+Worker publication is sequential. If the backend succeeds and a later site
+preview or upload fails, the guard stops with a partial deployment; inspect the
+live backend and site identities, then rerun the same reviewed commit once the
+failure is resolved. Never bypass the guard or delete a Worker to recover.
 Before merging this guarded deployment change, manually dispatch the staging
 workflow on the exact reviewed feature-branch commit and confirm that its
 complete preview passes with the CI token before any staging upload. Ordinary
@@ -131,6 +135,28 @@ this restriction can be changed. Local disposable database tests retain explicit
 There are no pending migrations in either current remote database. Blocking a
 future deployment until its schema rollout is independently reviewed is
 intentional; the former unscoped remote apply command is not an approved path.
+
+For a planned runtime date or plain-text variable change, edit the fixed desired
+values in `deploymentSafety.ts` and the matching Wrangler configuration in the
+same PR. Commit `deployment-transition.json` with the previously observed date
+or bindings for each affected Worker, grouped under `staging` and `prod`. The
+guard accepts only that exact old or desired live state during the transition,
+requires the desired state after each Worker upload, and still forbids D1,
+rate-limit, secret, cron, domain, or Worker identity changes. For example:
+
+```json
+{
+  "staging": {
+    "backend": {"date": "2026-08-31"},
+    "frontend": {"date": "2026-08-31"}
+  }
+}
+```
+
+The transition file is bound to the reviewed commit and preview input digest.
+After both Workers have reached the desired state, remove it in a subsequent
+reviewed PR. Secret provisioning and D1 migrations require their own scoped
+rollout commands and preview; they cannot use this Worker transition path.
 
 `--dry-run` now means that the complete bundle and live-resource gate succeeded,
 not just that uploads were disabled. A bundle alone and fixture metadata are not

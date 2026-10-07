@@ -12,6 +12,7 @@ import {
 import {
   cloudflareReader,
   deploymentTarget,
+  approvedPreviousWorkers,
   inspectDeployment,
   type ReadApi,
 } from './deploymentSafety';
@@ -218,6 +219,67 @@ test('complete fixture identities and existing migration metadata pass both envi
   }
 });
 
+test('reviewed runtime transitions accept only the old or desired state until publication', async () => {
+  const fixtureValue = await fixture();
+  const {metadata, read} = fixtureValue;
+  const target = {
+    ...fixtureValue.target,
+    previousWorkers: approvedPreviousWorkers(
+      fixtureValue.target.workers,
+      {staging: {backend: {date: '2026-08-30'}}},
+      'staging'
+    ),
+  };
+  const priorDate = '2026-08-30';
+  const endpoint = `/workers/scripts/${target.workers.backend.name}/settings`;
+  const settings = metadata[endpoint] as {compatibility_date: string};
+  settings.compatibility_date = priorDate;
+  await inspectDeployment(target, read);
+  await expect(inspectDeployment(target, read, ['backend'])).rejects.toThrow(
+    'reviewed transition'
+  );
+  settings.compatibility_date = target.workers.backend.date;
+  await inspectDeployment(target, read, ['backend']);
+  settings.compatibility_date = '2026-07-01';
+  await expect(inspectDeployment(target, read)).rejects.toThrow(
+    'reviewed transition'
+  );
+});
+
+test('planned transitions cannot change D1 or remove a bound variable', async () => {
+  const {target} = await fixture();
+  const original = target.workers.backend.bindings;
+  expect(() =>
+    approvedPreviousWorkers(
+      target.workers,
+      {
+        staging: {
+          backend: {
+            bindings: original.filter(binding => binding['type'] !== 'd1'),
+          },
+        },
+      },
+      'staging'
+    )
+  ).toThrow('immutable resource identities');
+  expect(() =>
+    approvedPreviousWorkers(
+      target.workers,
+      {
+        staging: {
+          backend: {
+            bindings: [
+              ...original,
+              {name: 'UNREVIEWED', type: 'plain_text', text: 'value'},
+            ],
+          },
+        },
+      },
+      'staging'
+    )
+  ).toThrow('invalid or removed');
+});
+
 test.each(['pending', 'unknown', 'mutating query'])(
   'D1 %s prevents deployment',
   async kind => {
@@ -347,7 +409,9 @@ test('both previews and fresh inspection precede each publication', async () => 
     'inspect:2',
     'publish:backend',
     'inspect:3',
+    'inspect:4',
     'publish:frontend',
+    'inspect:5',
   ]);
 });
 

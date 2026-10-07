@@ -13,7 +13,7 @@ import {
 interface DeploymentOperations {
   build(): Promise<void>;
   bundle(worker: WorkerName): Promise<void>;
-  inspect(): Promise<string>;
+  inspect(requireDesired?: readonly WorkerName[]): Promise<string>;
   inputs(): Promise<string>;
   publish(worker: WorkerName): Promise<void>;
 }
@@ -37,16 +37,22 @@ export async function guardedDeployment(
   const identities = await operations.inspect();
   if (dryRun || migrationsOnly) return;
   const workers: WorkerName[] = worker ? [worker] : ['backend', 'frontend'];
+  const published: WorkerName[] = [];
   for (const workspace of workers) {
     if ((await operations.inputs()) !== inputs)
       throw new Error('Deployment held: inputs changed after preview');
-    if ((await operations.inspect()) !== identities)
+    if ((await operations.inspect(published)) !== identities)
       throw new Error(
         'Deployment held: live resource identities changed after preview'
       );
     if ((await operations.inputs()) !== inputs)
       throw new Error('Deployment held: inputs changed during live inspection');
     await operations.publish(workspace);
+    published.push(workspace);
+    if ((await operations.inspect(published)) !== identities)
+      throw new Error(
+        'Deployment held: published Worker did not match the reviewed transition'
+      );
   }
 }
 
@@ -273,7 +279,7 @@ if (import.meta.main) {
         run(['run', '--filter', '@devopsrockstars/frontend', 'build']);
       },
       bundle: async workspace => publish(workspace, true),
-      inspect: () => inspectDeployment(target, read),
+      inspect: required => inspectDeployment(target, read, required),
       inputs: () => deploymentInputs(root, committedHead),
       publish: async workspace => publish(workspace, false),
     },

@@ -41,20 +41,76 @@ function keys(value: ObjectValue, allowed: string[]) {
     throw new Error('Deployment held: unreviewed infrastructure configuration');
 }
 
+interface WorkerTarget {
+  name: string;
+  date: string;
+  bindings: ObjectValue[];
+  secrets: string[];
+  crons: string[];
+  domains: string[];
+}
+
 export interface DeploymentTarget {
-  readonly workers: Record<
-    WorkerName,
-    {
-      name: string;
-      date: string;
-      bindings: ObjectValue[];
-      secrets: string[];
-      crons: string[];
-      domains: string[];
-    }
-  >;
+  readonly workers: Record<WorkerName, WorkerTarget>;
+  readonly previousWorkers?: Partial<Record<WorkerName, WorkerTarget>>;
   readonly database: {id: string; name: string};
   readonly migrations: string[];
+}
+
+export function approvedPreviousWorkers(
+  workers: Record<WorkerName, WorkerTarget>,
+  document: unknown,
+  environment: DeploymentEnvironment
+): Partial<Record<WorkerName, WorkerTarget>> {
+  const plan = object(document);
+  keys(plan, ['staging', 'prod']);
+  const selected = object(plan[environment] ?? {});
+  keys(selected, ['backend', 'frontend']);
+  const previous: Partial<Record<WorkerName, WorkerTarget>> = {};
+  for (const workspace of ['backend', 'frontend'] as const) {
+    if (selected[workspace] === undefined) continue;
+    const before = object(selected[workspace]);
+    keys(before, ['date', 'bindings']);
+    const desired = workers[workspace];
+    const date = before['date'] ?? desired.date;
+    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(date))
+      throw new Error('Deployment held: invalid planned runtime date');
+    const bindings =
+      before['bindings'] === undefined
+        ? desired.bindings
+        : array(before['bindings']).map(normalizedBinding);
+    equal(
+      sortedBindings(
+        bindings.filter(binding => binding['type'] !== 'plain_text')
+      ),
+      sortedBindings(
+        desired.bindings.filter(binding => binding['type'] !== 'plain_text')
+      ),
+      'planned immutable resource identities'
+    );
+    const desiredVariables = new Set(
+      desired.bindings
+        .filter(binding => binding['type'] === 'plain_text')
+        .map(binding => binding['name'])
+    );
+    const oldVariables = bindings.filter(
+      binding => binding['type'] === 'plain_text'
+    );
+    if (
+      oldVariables.some(
+        binding =>
+          typeof binding['name'] !== 'string' ||
+          typeof binding['text'] !== 'string' ||
+          !desiredVariables.has(binding['name'])
+      ) ||
+      new Set(bindings.map(binding => binding['name'])).size !== bindings.length
+    )
+      throw new Error(
+        'Deployment held: planned variables are invalid or removed'
+      );
+    previous[workspace] = {...desired, date, bindings};
+  }
+  return previous;
 }
 
 export async function deploymentTarget(
@@ -206,11 +262,17 @@ export async function deploymentTarget(
     migrations.some(name => !/^\d+_[\w-]+\.sql$/u.test(name))
   )
     throw new Error('Deployment held: unreviewed migration directory');
+  const workers = {
+    backend: configurations.backend,
+    frontend: configurations.frontend,
+  };
+  const transition = Bun.file(path.join(root, 'deployment-transition.json'));
+  const previousWorkers = (await transition.exists())
+    ? approvedPreviousWorkers(workers, await transition.json(), environment)
+    : {};
   return {
-    workers: {
-      backend: configurations.backend,
-      frontend: configurations.frontend,
-    },
+    workers,
+    previousWorkers,
     database,
     migrations,
   };
@@ -251,7 +313,8 @@ function sortedBindings(bindings: ObjectValue[]) {
 // tables hold deployment; this never initializes schema or applies migrations.
 export async function inspectDeployment(
   target: DeploymentTarget,
-  read: ReadApi
+  read: ReadApi,
+  requireDesired: readonly WorkerName[] = []
 ) {
   const domains = array(await read('/workers/domains')).map(object);
   const database = object(await read(`/d1/database/${target.database.id}`));
@@ -275,25 +338,35 @@ export async function inspectDeployment(
     'pending or unknown D1 migrations'
   );
   const identities: ObjectValue[] = [];
-  for (const worker of Object.values(target.workers)) {
+  for (const workspace of ['backend', 'frontend'] as const) {
+    const worker = target.workers[workspace];
     const endpoint = `/workers/scripts/${worker.name}`;
     const settings = object(await read(`${endpoint}/settings`));
-    equal(
-      settings['compatibility_date'],
-      worker.date,
-      'live compatibility date'
-    );
     equal(settings['compatibility_flags'] ?? [], [], 'live runtime flags');
     const bindings = array(settings['bindings']).map(normalizedBinding);
-    const expected = [
-      ...worker.bindings,
-      ...worker.secrets.map(name => ({name, type: 'secret_text'})),
-    ];
-    equal(
-      sortedBindings(bindings),
-      sortedBindings(expected),
-      'live bindings or secrets'
-    );
+    const alternatives = [worker];
+    const previous = target.previousWorkers?.[workspace];
+    if (previous && !requireDesired.includes(workspace))
+      alternatives.push(previous);
+    if (
+      !alternatives.some(
+        expected =>
+          canonical({
+            date: settings['compatibility_date'],
+            bindings: sortedBindings(bindings),
+          }) ===
+          canonical({
+            date: expected.date,
+            bindings: sortedBindings([
+              ...expected.bindings,
+              ...expected.secrets.map(name => ({name, type: 'secret_text'})),
+            ]),
+          })
+      )
+    )
+      throw new Error(
+        'Deployment held: live runtime, bindings, or secrets differ from the reviewed transition'
+      );
     const subdomain = object(await read(`${endpoint}/subdomain`));
     equal(subdomain['enabled'], false, 'live workers.dev policy');
     equal(subdomain['previews_enabled'], false, 'live preview URL policy');

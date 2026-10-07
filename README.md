@@ -283,13 +283,20 @@ need a separately reviewed execution preview before any mutation.
 6. Initial provisioning published the Workers before Terraform attached their
    custom domains. Maintenance deploys require the existing Workers and domains
    to pass the live inspection, so they never use that bootstrap sequence.
-   Terraform changes require a complete refreshed saved plan against the real
-   backend with no resource deletion or replacement before applying it.
+   For a separately reviewed Terraform change, initialize the real backend,
+   inspect a complete saved plan, and apply that exact plan only if it has no
+   resource deletion or replacement:
 
    ```shell
-   bun run deploy:staging
-   bun run deploy:prod
+   cd terraform
+   ./init.sh
+   terraform plan -var-file=main.tfvars -out=/tmp/devopsrockstars-reviewed.tfplan
+   terraform show /tmp/devopsrockstars-reviewed.tfplan
+   terraform apply /tmp/devopsrockstars-reviewed.tfplan
    ```
+
+   Routine Worker maintenance uses `bun run deploy:staging` and
+   `bun run deploy:prod` after their guarded dry-runs.
 
    Terraform needs `TF_VAR_cloudflare_api_token` in the environment and
    `cloudflare_account_id` in `main.tfvars`. The token needs Workers Scripts
