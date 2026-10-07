@@ -11,8 +11,8 @@
     "start:staging": "PUBLIC_ENVIRONMENT=staging bun tooling/server.ts --port 8082",
     "test": "bun test --timeout 120000 e2e/specs",
     "test:headless": "HEADLESS=true bun test --timeout 120000 e2e/specs",
-    "deploy:staging": "bun run --bun wrangler deploy --env staging",
-    "deploy:prod": "bun run --bun wrangler deploy --env prod"
+    "deploy:staging": "bun ../../scripts/deploy.ts staging --worker=frontend",
+    "deploy:prod": "bun ../../scripts/deploy.ts prod --worker=frontend"
   },
   "devDependencies": {
     "@types/three": "0.186.0",

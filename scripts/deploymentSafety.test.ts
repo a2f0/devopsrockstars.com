@@ -21,6 +21,31 @@ test('the disabled production store retains only its existing hash secret', asyn
   expect(staging.workers.backend.secrets).toContain('STRIPE_SECRET_KEY');
 });
 
+test('every package remote deploy script uses the shared guard', async () => {
+  const manifests = await Promise.all(
+    ['.', 'packages/backend', 'packages/frontend'].map(directory =>
+      Bun.file(path.join(root, directory, 'package.json')).json()
+    )
+  );
+  expect(manifests[0].scripts['deploy:staging']).toBe(
+    'bun scripts/deploy.ts staging'
+  );
+  expect(manifests[0].scripts['deploy:prod']).toBe(
+    'bun scripts/deploy.ts prod'
+  );
+  for (const [index, worker] of [
+    [1, 'backend'],
+    [2, 'frontend'],
+  ] as const) {
+    expect(manifests[index].scripts['deploy:staging']).toBe(
+      `bun ../../scripts/deploy.ts staging --worker=${worker}`
+    );
+    expect(manifests[index].scripts['deploy:prod']).toBe(
+      `bun ../../scripts/deploy.ts prod --worker=${worker}`
+    );
+  }
+});
+
 async function fixture(environment: 'staging' | 'prod' = 'staging') {
   const target = await deploymentTarget(root, environment);
   const metadata: Record<string, unknown> = {
@@ -177,7 +202,8 @@ function operations(failure?: string) {
     value: {
       build: () => step('build'),
       inputs: async () =>
-        failure === 'inputs changed' && inspections > 0
+        (failure === 'inputs changed' && inspections > 0) ||
+        (failure === 'inputs change during inspection' && inspections > 1)
           ? 'changed'
           : 'reviewed',
       bundle: (worker: string) => step(`preview:${worker}`),
@@ -213,6 +239,7 @@ test.each([
   'inspect:1',
   'inspect:2',
   'inputs changed',
+  'inputs change during inspection',
   'identities changed',
 ])('failed %s publishes no Worker', async failure => {
   const {value, events} = operations(failure);

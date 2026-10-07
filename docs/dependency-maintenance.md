@@ -101,6 +101,9 @@ may inspect an uncommitted local candidate; that proof never authorizes publicat
 Custom Wrangler build hooks are unsupported, so a deployment cannot rerun an
 uninspected build after capturing the preview inputs.
 CI serializes deployments per environment without canceling an active deployment.
+Feature-branch push CI runs the same complete staging and production dry-runs
+with the CI token; it performs no Worker upload. Do not merge
+until that preview and the required code-quality check both pass.
 
 **D1 migrations must already be applied.** The gate reads only
 `SELECT name FROM d1_migrations ORDER BY id` from the existing database and checks

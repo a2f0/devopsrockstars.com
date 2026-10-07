@@ -43,6 +43,8 @@ export async function guardedDeployment(
       throw new Error(
         'Deployment held: live resource identities changed after preview'
       );
+    if ((await operations.inputs()) !== inputs)
+      throw new Error('Deployment held: inputs changed during live inspection');
     await operations.publish(workspace);
   }
 }
