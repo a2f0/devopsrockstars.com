@@ -10,9 +10,9 @@ import {
   verifyDeploymentRuntime,
 } from './deploy';
 import {
+  approvedPreviousWorkers,
   cloudflareReader,
   deploymentTarget,
-  approvedPreviousWorkers,
   inspectDeployment,
   type ReadApi,
 } from './deploymentSafety';

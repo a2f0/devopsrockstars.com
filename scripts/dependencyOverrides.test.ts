@@ -1,5 +1,4 @@
 import {expect, test} from 'bun:test';
-import {overrides} from '../package.json';
 
 function assertOverrideParents(selectors: readonly string[], source: string) {
   const lockfile: unknown = Bun.JSONC.parse(source);
@@ -37,7 +36,12 @@ function assertOverrideParents(selectors: readonly string[], source: string) {
 
 test('temporary overrides still match resolved parent versions', async () => {
   const source = await Bun.file(new URL('../bun.lock', import.meta.url)).text();
-  assertOverrideParents(Object.keys(overrides), source);
+  const manifest = (await Bun.file(
+    new URL('../package.json', import.meta.url)
+  ).json()) as {
+    overrides: Record<string, unknown>;
+  };
+  assertOverrideParents(Object.keys(manifest.overrides), source);
 });
 
 test('the Markdownlint override resolves only the patched Smol-TOML', async () => {

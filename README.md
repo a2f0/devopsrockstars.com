@@ -290,9 +290,14 @@ need a separately reviewed execution preview before any mutation.
    ```shell
    cd terraform
    ./init.sh
-   terraform plan -var-file=main.tfvars -out=/tmp/devopsrockstars-reviewed.tfplan
-   terraform show /tmp/devopsrockstars-reviewed.tfplan
-   terraform apply /tmp/devopsrockstars-reviewed.tfplan
+   plan_dir=$(mktemp -d)
+   terraform plan -input=false -var-file=main.tfvars -out="$plan_dir/reviewed.tfplan"
+   terraform show -json "$plan_dir/reviewed.tfplan" > "$plan_dir/plan.json"
+   ../node_modules/.bin/agent-tool dependencies check-terraform-plan "$plan_dir/plan.json"
+   terraform show "$plan_dir/reviewed.tfplan"
+   terraform apply "$plan_dir/reviewed.tfplan"
+   rm "$plan_dir/plan.json" "$plan_dir/reviewed.tfplan"
+   rmdir "$plan_dir"
    ```
 
    Routine Worker maintenance uses `bun run deploy:staging` and

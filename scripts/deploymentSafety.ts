@@ -150,6 +150,7 @@ export async function deploymentTarget(
     equal(selected['name'], name, 'Worker identity');
     equal(selected['workers_dev'], false, 'workers.dev policy');
     equal(selected['preview_urls'], false, 'preview URL policy');
+    // A planned date bump also records the old live date in deployment-transition.json.
     equal(
       config['compatibility_date'],
       '2026-08-31',

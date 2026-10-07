@@ -1,6 +1,6 @@
 ---
 name: package-update-and-verify
-description: Follow the shared dependency upgrade workflow with DevOps Rockstars validation and deployment gates.
+description: Use when updating dependencies in DevOps Rockstars; follow the shared upgrade workflow with repository validation and deployment gates.
 ---
 
 # Package Update And Verify
