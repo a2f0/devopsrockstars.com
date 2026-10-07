@@ -52,12 +52,11 @@ patch when upstream preserves those options and the CLI regression passes
 unpatched. Repository maintainers review both by **2026-11-07** or on either
 owner's next upgrade, whichever comes first.
 
-The baseline audit and candidate lock inspection retain the following findings.
-The candidate registry audit could not be refreshed; this is an unresolved graph.
+The fresh candidate registry audit on 2026-10-07 retains the following findings.
 
 | Locked dependency | Owning path and exposure | Fix or hold |
 | --- | --- | --- |
-| Sharp 0.35.4 | Wrangler 4.147 → Miniflare 5.20261001 alpha; native SVG decoder in local Worker tooling | [GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w), high; fixed in 0.35.5 with librsvg 2.63.2, but the actual Miniflare API/native regression requires unavailable local listeners. |
+| Sharp 0.35.4 | Wrangler 4.147 → Miniflare 5.20261001 alpha; native SVG decoder in local Worker tooling | [GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w), high; fixed in 0.35.5 with librsvg 2.63.2, but forcing a new native decoder into Miniflare lacks a validated owner update and native compatibility proof. |
 | Basic-FTP 5.3.1 | WebdriverIO 9.32 → Puppeteer Browsers 2.13.2 → proxy-agent → get-uri 6.0.5; browser-download proxy tooling | [GHSA-c475-qrg2-pj4r](https://github.com/advisories/GHSA-c475-qrg2-pj4r), high; fixed in 6.2.1. Owner pins and browser compatibility need a validated upgrade. |
 | Extract-ZIP 2.0.1 | WebdriverIO → Puppeteer Browsers 2.13.2; downloaded browser archive extraction | [GHSA-jmr9-qjv8-65gv](https://github.com/advisories/GHSA-jmr9-qjv8-65gv) and [GHSA-7pqw-9j4j-h8q3](https://github.com/advisories/GHSA-7pqw-9j4j-h8q3), high; neither advisory lists a patched version. |
 | Braces 3.0.3 | Markdownlint CLI2 → Micromatch 4.0.8; repository-controlled glob patterns | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), high; no published fix listed. Do not feed untrusted patterns into this tooling. |
@@ -86,6 +85,11 @@ compatibility date, disabled `workers.dev`/preview URLs, cron triggers, custom
 domains and zone IDs. It rejects unreviewed resource types, routes, incomplete
 API inventories, missing resources, and identity changes. It rechecks source,
 generated assets and Wrangler inputs plus live identities before each publication.
+The expected identities are intentionally fixed independently of Wrangler's
+configuration: editing a Worker name, D1 binding, namespace, runtime date,
+domain, cron, or secret set requires its own reviewed infrastructure change
+and a new complete live preview. Deriving expectations from the changed config
+would let an accidental resource replacement pass this guard.
 The production store flag is off, and its existing Worker has only
 `CHECKOUT_HASH_SECRET`; staging also has the three Stripe secrets. The guard
 preserves those exact live secret sets. A production store launch needs a
@@ -102,7 +106,7 @@ CI serializes deployments per environment without canceling an active deployment
 `SELECT name FROM d1_migrations ORDER BY id` from the existing database and checks
 the complete local filename set. A missing table, failed read, pending migration,
 or unknown applied migration holds deployment. It never initializes schema or
-applies remote SQL. `--skip-migrations` cannot bypass this rule; remote
+applies remote SQL. `--skip-migrations` is rejected; remote
 `db:migrate:*` scripts perform the same preview and report zero pending migrations.
 New migrations need a separately established, meaningful execution preview before
 this restriction can be changed. Local disposable database tests retain explicit

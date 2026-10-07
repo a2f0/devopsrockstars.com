@@ -106,11 +106,14 @@ if (import.meta.main) {
   const [environment, ...flags] = process.argv.slice(2);
   const allowed = [
     '--dry-run',
-    '--skip-migrations',
     '--migrations-only',
     '--worker=backend',
     '--worker=frontend',
   ];
+  if (flags.includes('--skip-migrations'))
+    throw new Error(
+      'Deployment held: D1 migration inspection cannot be skipped'
+    );
   if (
     !['staging', 'prod'].includes(environment ?? '') ||
     flags.some(flag => !allowed.includes(flag))
