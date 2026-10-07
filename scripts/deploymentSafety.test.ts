@@ -2,7 +2,13 @@ import {expect, spyOn, test} from 'bun:test';
 import {mkdir, mkdtemp, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {deploymentCommit, deploymentInputs, guardedDeployment} from './deploy';
+import {
+  deploymentCommit,
+  deploymentInputs,
+  guardedDeployment,
+  parseDeploymentRequest,
+  verifyDeploymentRuntime,
+} from './deploy';
 import {
   cloudflareReader,
   deploymentTarget,
@@ -13,6 +19,7 @@ import {
 const root = path.resolve(import.meta.dir, '..');
 const account = 'a'.repeat(32);
 const zone = 'b'.repeat(32);
+const otherZone = 'c'.repeat(32);
 
 test('the disabled production store retains only its existing hash secret', async () => {
   const production = await deploymentTarget(root, 'prod');
@@ -33,6 +40,16 @@ test('every package remote deploy script uses the shared guard', async () => {
   expect(manifests[0].scripts['deploy:prod']).toBe(
     'bun scripts/deploy.ts prod'
   );
+  for (const environment of ['staging', 'prod']) {
+    expect(manifests[0].scripts[`db:check:${environment}`]).toBe(
+      `bun run --filter @devopsrockstars/backend db:check:${environment}`
+    );
+    expect(manifests[1].scripts[`db:check:${environment}`]).toBe(
+      `bun ../../scripts/deploy.ts ${environment} --check-migrations`
+    );
+    expect(manifests[0].scripts[`db:migrate:${environment}`]).toBeUndefined();
+    expect(manifests[1].scripts[`db:migrate:${environment}`]).toBeUndefined();
+  }
   for (const [index, worker] of [
     [1, 'backend'],
     [2, 'frontend'],
@@ -46,9 +63,99 @@ test('every package remote deploy script uses the shared guard', async () => {
   }
 });
 
+test('deployment arguments reject bypasses and select preview or publication', async () => {
+  expect(() => parseDeploymentRequest(['prod', '--skip-migrations'])).toThrow(
+    'migration inspection cannot be skipped'
+  );
+  expect(() =>
+    parseDeploymentRequest(['staging', '--worker=backend', '--worker=frontend'])
+  ).toThrow('Choose only one Worker');
+  expect(() => parseDeploymentRequest(['unknown'])).toThrow('Usage:');
+  expect(() => parseDeploymentRequest(['prod', '--unknown'])).toThrow('Usage:');
+  expect(parseDeploymentRequest(['staging', '--dry-run'])).toEqual({
+    environment: 'staging',
+    dryRun: true,
+    migrationsOnly: false,
+    worker: undefined,
+  });
+  expect(parseDeploymentRequest(['prod', '--check-migrations'])).toEqual({
+    environment: 'prod',
+    dryRun: false,
+    migrationsOnly: true,
+    worker: undefined,
+  });
+  const request = parseDeploymentRequest(['prod', '--worker=backend']);
+  const {value, events} = operations();
+  if (!request.worker) throw new Error('Missing selected Worker');
+  await guardedDeployment(value, {worker: request.worker});
+  expect(events).toContain('publish:backend');
+  expect(events).not.toContain('publish:frontend');
+});
+
+test('deployment refuses mismatched tools and unbound CI commits', () => {
+  const manifest = {
+    packageManager: `bun@${Bun.version}`,
+    devDependencies: {wrangler: '4.147.0'},
+  };
+  const wrangler = {version: '4.147.0'};
+  expect(
+    verifyDeploymentRuntime(
+      manifest,
+      wrangler,
+      Bun.version,
+      false,
+      undefined,
+      false
+    )
+  ).toBeUndefined();
+  expect(() =>
+    verifyDeploymentRuntime(
+      manifest,
+      wrangler,
+      Bun.version,
+      true,
+      undefined,
+      false
+    )
+  ).toThrow('validated CI commit is missing');
+  const head = 'a'.repeat(40);
+  expect(
+    verifyDeploymentRuntime(manifest, wrangler, Bun.version, true, head, false)
+  ).toBe(head);
+  expect(
+    verifyDeploymentRuntime(
+      manifest,
+      wrangler,
+      Bun.version,
+      true,
+      undefined,
+      true
+    )
+  ).toBeUndefined();
+  for (const invalid of [
+    [{...manifest, packageManager: 'bun@0.0.0'}, wrangler],
+    [manifest, {version: '0.0.0'}],
+    [{...manifest, devDependencies: {}}, wrangler],
+  ] as const)
+    expect(() =>
+      verifyDeploymentRuntime(
+        invalid[0],
+        invalid[1],
+        Bun.version,
+        false,
+        undefined,
+        false
+      )
+    ).toThrow('Deployment held');
+});
+
 async function fixture(environment: 'staging' | 'prod' = 'staging') {
   const target = await deploymentTarget(root, environment);
   const metadata: Record<string, unknown> = {
+    '/zones': [
+      {id: zone, name: 'devopsrockstars.com'},
+      {id: otherZone, name: 'other.example'},
+    ],
     '/workers/domains': Object.values(target.workers).flatMap(worker =>
       worker.domains.map((hostname, index) => ({
         id: `${worker.name}-${index}`,
@@ -71,6 +178,7 @@ async function fixture(environment: 'staging' | 'prod' = 'staging') {
       },
     ],
     [`/zones/${zone}/workers/routes`]: [],
+    [`/zones/${otherZone}/workers/routes`]: [],
   };
   for (const worker of Object.values(target.workers)) {
     const endpoint = `/workers/scripts/${worker.name}`;
@@ -190,6 +298,16 @@ test('a changed database identity, domain, route, or cron is held', async () => 
   }
 });
 
+test('a route for an owned Worker in another account zone is held', async () => {
+  const {target, metadata, read} = await fixture();
+  metadata[`/zones/${otherZone}/workers/routes`] = [
+    {script: target.workers.frontend.name, pattern: 'other.example/*'},
+  ];
+  await expect(inspectDeployment(target, read)).rejects.toThrow(
+    'unexpected live Worker routes'
+  );
+});
+
 function operations(failure?: string) {
   const events: string[] = [];
   let inspections = 0;
@@ -297,6 +415,31 @@ test('incomplete API inventory and sensitive errors fail closed without leaking 
       })
     );
     expect(await read('/workers/domains')).toHaveLength(1);
+    fetch.mockResolvedValue(
+      Response.json({
+        success: true,
+        errors: null,
+        result: [{id: zone}],
+        result_info: {page: 1, per_page: 50, count: 1, total_count: 2},
+      })
+    );
+    await expect(read('/zones')).rejects.toThrow('incomplete');
+    fetch.mockResolvedValue(
+      Response.json({
+        success: true,
+        errors: null,
+        result: [{id: zone}],
+        result_info: {page: 1, per_page: 50, count: 1, total_count: 1},
+      })
+    );
+    expect(await read('/zones')).toHaveLength(1);
+    expect(String(fetch.mock.calls.at(-1)?.[0])).toContain(
+      `/zones?account.id=${account}`
+    );
+    fetch.mockResolvedValue(
+      Response.json({success: true, errors: null, result: []})
+    );
+    expect(await read(`/zones/${zone}/workers/routes`)).toEqual([]);
     fetch.mockResolvedValue(
       Response.json({
         success: false,

@@ -111,8 +111,9 @@ feature-branch pushes do not receive deployment credentials.
 the complete local filename set. A missing table, failed read, pending migration,
 or unknown applied migration holds deployment. It never initializes schema or
 applies remote SQL. `--skip-migrations` is rejected; remote
-`db:migrate:*` scripts perform the same preview and report zero pending migrations.
-New migrations need a separately established, meaningful execution preview before
+`db:check:*` scripts perform the same preview and report zero pending migrations.
+They do not apply SQL. New migrations need a separate reviewed rollout with a
+scoped apply command and meaningful execution preview before
 this restriction can be changed. Local disposable database tests retain explicit
 `--local` commands.
 

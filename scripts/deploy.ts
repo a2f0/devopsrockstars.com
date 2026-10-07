@@ -142,11 +142,11 @@ export async function deploymentInputs(root: string, committedHead?: string) {
   return digest.digest('hex');
 }
 
-if (import.meta.main) {
-  const [environment, ...flags] = process.argv.slice(2);
+export function parseDeploymentRequest(arguments_: string[]) {
+  const [environment, ...flags] = arguments_;
   const allowed = [
     '--dry-run',
-    '--migrations-only',
+    '--check-migrations',
     '--worker=backend',
     '--worker=frontend',
   ];
@@ -159,40 +159,74 @@ if (import.meta.main) {
     flags.some(flag => !allowed.includes(flag))
   )
     throw new Error(
-      'Usage: bun scripts/deploy.ts <staging|prod> [--dry-run] [--migrations-only] [--worker=backend|frontend]'
+      'Usage: bun scripts/deploy.ts <staging|prod> [--dry-run] [--check-migrations] [--worker=backend|frontend]'
     );
-  const selected = environment as DeploymentEnvironment;
   if (flags.includes('--worker=backend') && flags.includes('--worker=frontend'))
     throw new Error('Choose only one Worker');
+  return {
+    environment: environment as DeploymentEnvironment,
+    dryRun: flags.includes('--dry-run'),
+    migrationsOnly: flags.includes('--check-migrations'),
+    worker: flags.includes('--worker=backend')
+      ? ('backend' as const)
+      : flags.includes('--worker=frontend')
+        ? ('frontend' as const)
+        : undefined,
+  };
+}
+
+function record(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Deployment held: installed tool metadata is incomplete');
+  return value as Record<string, unknown>;
+}
+
+export function verifyDeploymentRuntime(
+  manifest: unknown,
+  wrangler: unknown,
+  bunVersion: string,
+  githubActions: boolean,
+  githubSha: string | undefined,
+  previewOnly: boolean
+) {
+  const packageJson = record(manifest);
+  const installedWrangler = record(wrangler);
+  const pins = record(packageJson['devDependencies']);
+  if (
+    packageJson['packageManager'] !== `bun@${bunVersion}` ||
+    installedWrangler['version'] !== pins['wrangler'] ||
+    typeof pins['wrangler'] !== 'string'
+  )
+    throw new Error(
+      'Deployment held: installed tools do not match repository pins'
+    );
+  if (githubActions && !previewOnly && !/^[a-f0-9]{40}$/u.test(githubSha ?? ''))
+    throw new Error('Deployment held: validated CI commit is missing');
+  return githubActions ? githubSha : undefined;
+}
+
+if (import.meta.main) {
+  const request = parseDeploymentRequest(process.argv.slice(2));
+  const selected = request.environment;
   const manifest = await Bun.file(
     new URL('../package.json', import.meta.url)
   ).json();
   const wrangler = await Bun.file(
     new URL('../node_modules/wrangler/package.json', import.meta.url)
   ).json();
-  if (
-    manifest.packageManager !== `bun@${Bun.version}` ||
-    wrangler.version !== manifest.devDependencies.wrangler
-  )
-    throw new Error(
-      'Deployment held: installed tools do not match repository pins'
-    );
   const root = path.resolve(import.meta.dir, '..');
-  const previewOnly =
-    flags.includes('--dry-run') || flags.includes('--migrations-only');
-  const ciHead = process.env['GITHUB_SHA'];
-  if (
-    !previewOnly &&
-    process.env['GITHUB_ACTIONS'] === 'true' &&
-    !/^[a-f0-9]{40}$/u.test(ciHead ?? '')
-  )
-    throw new Error('Deployment held: validated CI commit is missing');
+  const previewOnly = request.dryRun || request.migrationsOnly;
+  const ciHead = verifyDeploymentRuntime(
+    manifest,
+    wrangler,
+    Bun.version,
+    process.env['GITHUB_ACTIONS'] === 'true',
+    process.env['GITHUB_SHA'],
+    previewOnly
+  );
   const committedHead = previewOnly
     ? undefined
-    : deploymentCommit(
-        root,
-        process.env['GITHUB_ACTIONS'] === 'true' ? ciHead : undefined
-      );
+    : deploymentCommit(root, ciHead);
   const env = {
     ...process.env,
     PUBLIC_ENVIRONMENT: selected === 'staging' ? 'staging' : 'production',
@@ -232,11 +266,6 @@ if (import.meta.main) {
       ],
       workspace
     );
-  const worker = flags.includes('--worker=backend')
-    ? 'backend'
-    : flags.includes('--worker=frontend')
-      ? 'frontend'
-      : undefined;
   await guardedDeployment(
     {
       build: async () => {
@@ -249,15 +278,15 @@ if (import.meta.main) {
       publish: async workspace => publish(workspace, false),
     },
     {
-      dryRun: flags.includes('--dry-run'),
-      migrationsOnly: flags.includes('--migrations-only'),
-      ...(worker ? {worker} : {}),
+      dryRun: request.dryRun,
+      migrationsOnly: request.migrationsOnly,
+      ...(request.worker ? {worker: request.worker} : {}),
     }
   );
   console.log(
-    flags.includes('--dry-run')
+    request.dryRun
       ? `Cloudflare preview verified (${selected}).`
-      : flags.includes('--migrations-only')
+      : request.migrationsOnly
         ? 'No pending D1 migrations; no database mutation performed.'
         : `Cloudflare deployment completed (${selected}).`
   );

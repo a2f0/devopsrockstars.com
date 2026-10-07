@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "db:migrate:local": "bun run --bun wrangler d1 migrations apply devopsrockstars-store-staging --env staging --local",
-    "db:migrate:staging": "bun ../../scripts/deploy.ts staging --migrations-only",
-    "db:migrate:prod": "bun ../../scripts/deploy.ts prod --migrations-only",
+    "db:check:staging": "bun ../../scripts/deploy.ts staging --check-migrations",
+    "db:check:prod": "bun ../../scripts/deploy.ts prod --check-migrations",
     "deploy:staging": "bun ../../scripts/deploy.ts staging --worker=backend",
     "deploy:prod": "bun ../../scripts/deploy.ts prod --worker=backend",
     "dev": "bun run --bun wrangler dev --env staging --local --var STOREFRONT_ORIGINS:http://localhost:8080,http://127.0.0.1:8080,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8082,http://127.0.0.1:8082"

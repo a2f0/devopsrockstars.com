@@ -61,7 +61,7 @@ export async function deploymentTarget(
   root: string,
   environment: DeploymentEnvironment
 ): Promise<DeploymentTarget> {
-  const workers = {} as DeploymentTarget['workers'];
+  const configurations: Partial<DeploymentTarget['workers']> = {};
   let database: DeploymentTarget['database'] | undefined;
   for (const workspace of ['backend', 'frontend'] as const) {
     const config = object(
@@ -167,7 +167,7 @@ export async function deploymentTarget(
       equal(config['main'], undefined, 'site entrypoint');
       equal(config['triggers'], undefined, 'site triggers');
     }
-    workers[workspace] = {
+    configurations[workspace] = {
       name,
       date: '2026-08-31',
       bindings,
@@ -195,7 +195,8 @@ export async function deploymentTarget(
             : ['devopsrockstars.com', 'www.devopsrockstars.com'],
     };
   }
-  if (!database) throw new Error('Missing database identity');
+  if (!database || !configurations.backend || !configurations.frontend)
+    throw new Error('Missing Worker or database identity');
   const migrations = (
     await readdir(path.join(root, 'packages/backend/migrations'))
   ).sort();
@@ -204,7 +205,14 @@ export async function deploymentTarget(
     migrations.some(name => !/^\d+_[\w-]+\.sql$/u.test(name))
   )
     throw new Error('Deployment held: unreviewed migration directory');
-  return {workers, database, migrations};
+  return {
+    workers: {
+      backend: configurations.backend,
+      frontend: configurations.frontend,
+    },
+    database,
+    migrations,
+  };
 }
 
 function normalizedBinding(value: unknown): ObjectValue {
@@ -322,12 +330,20 @@ export async function inspectDeployment(
       });
     }
   }
-  for (const zone of new Set(identities.map(identity => identity['zone']))) {
-    if (typeof zone !== 'string' || !/^[a-f0-9]{32}$/u.test(zone))
+  const zones = array(await read('/zones')).map(object);
+  for (const identity of identities) {
+    const zone = zones.find(zone => zone['id'] === identity['zone']);
+    if (!zone)
+      throw new Error(
+        'Deployment held: custom domain zone is not in account inventory'
+      );
+    equal(zone['name'], 'devopsrockstars.com', 'live account zone');
+  }
+  for (const zone of zones) {
+    const id = zone['id'];
+    if (typeof id !== 'string' || !/^[a-f0-9]{32}$/u.test(id))
       throw new Error('Deployment held: invalid live zone identity');
-    const routes = array(await read(`/zones/${zone}/workers/routes`)).map(
-      object
-    );
+    const routes = array(await read(`/zones/${id}/workers/routes`)).map(object);
     if (
       routes.some(route =>
         Object.values(target.workers).some(
@@ -361,9 +377,12 @@ export function cloudflareReader(
       throw new Error(
         'Deployment held: only migration metadata reads are allowed'
       );
-    const apiPath = endpoint.startsWith('/zones/')
-      ? endpoint
-      : `/accounts/${account}${endpoint}`;
+    const apiPath =
+      endpoint === '/zones'
+        ? `/zones?account.id=${account}&per_page=50&page=1`
+        : endpoint.startsWith('/zones/')
+          ? endpoint
+          : `/accounts/${account}${endpoint}`;
     const response = await fetch(
       `https://api.cloudflare.com/client/v4${apiPath}`,
       {
@@ -385,7 +404,7 @@ export function cloudflareReader(
       (body['errors'] !== null && array(body['errors']).length)
     )
       throw new Error('Deployment preview API did not succeed');
-    if (endpoint === '/workers/domains') {
+    if (endpoint === '/workers/domains' || endpoint === '/zones') {
       const pages = object(body['result_info']);
       const count = array(body['result']).length;
       if (

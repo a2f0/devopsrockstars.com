@@ -246,12 +246,14 @@ need a separately reviewed execution preview before any mutation.
    ```
 
 3. The initial schema seeded the historical $20 price and zero stock as safe
-   placeholders. `bun run db:migrate:prod` now verifies the existing migration
-   table and requires zero pending migrations; it applies no remote SQL. Schema,
-   price and inventory changes require their own reviewed execution preview.
+   placeholders. `bun run db:check:prod` verifies the existing migration table
+   and requires zero pending migrations; it applies no remote SQL. Schema,
+   price and inventory changes require a separate reviewed migration rollout
+   with a complete execution preview before remote SQL is run. There is no
+   generic remote migration apply command in this maintenance workflow.
 
    ```shell
-   bun run db:migrate:prod
+   bun run db:check:prod
    ```
 
 4. Add the Stripe keys as Worker secrets, once per environment. Staging takes
