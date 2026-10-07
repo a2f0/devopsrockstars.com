@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
-import {readdir} from 'node:fs/promises';
+import {readdir, realpath} from 'node:fs/promises';
+import {createRequire} from 'node:module';
 import path from 'node:path';
 import {
   cloudflareReader,
@@ -90,11 +91,43 @@ export async function deploymentInputs(root: string, committedHead?: string) {
   )
     .filter(entry => entry.isFile())
     .map(entry => path.relative(root, path.join(entry.parentPath, entry.name)));
+  // Resolve dependencies from the actual installed Wrangler package. Bun may
+  // install these under its virtual store instead of the root node_modules.
+  const wranglerManifest = await realpath(
+    path.join(root, 'node_modules/wrangler/package.json')
+  );
+  const wranglerRequire = createRequire(wranglerManifest);
+  const esbuildManifest = await realpath(
+    wranglerRequire.resolve('esbuild/package.json')
+  );
+  const esbuildRequire = createRequire(esbuildManifest);
+  const nativeEsbuild = `@esbuild/${process.platform}-${process.arch}`;
+  const toolPaths = [
+    'node_modules/.bin/wrangler',
+    'node_modules/wrangler/package.json',
+    'node_modules/wrangler/bin/wrangler.js',
+    'node_modules/wrangler/wrangler-dist/cli.js',
+    wranglerRequire.resolve('esbuild/package.json'),
+    wranglerRequire.resolve('esbuild/lib/main.js'),
+    wranglerRequire.resolve('esbuild/bin/esbuild'),
+    esbuildRequire.resolve(`${nativeEsbuild}/package.json`),
+    esbuildRequire.resolve(`${nativeEsbuild}/bin/esbuild`),
+  ];
+  const toolFiles = await Promise.all(
+    toolPaths.map(async filename => {
+      const absolute = path.resolve(root, filename);
+      return {
+        filename: path.relative(root, absolute),
+        resolved: await realpath(absolute),
+      };
+    })
+  );
+  for (const tool of toolFiles)
+    digest.update(`tool\0${tool.filename}\0${tool.resolved}\0`);
   const inputs = [
     ...files.stdout.toString().split('\0').filter(Boolean),
     ...generated,
-    'node_modules/wrangler/package.json',
-    'node_modules/wrangler/wrangler-dist/cli.js',
+    ...toolFiles.map(tool => tool.filename),
   ];
   for (const filename of inputs.sort()) {
     const file = Bun.file(path.join(root, filename));

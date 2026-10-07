@@ -1,5 +1,5 @@
 import {expect, spyOn, test} from 'bun:test';
-import {mkdtemp, mkdir, rm} from 'node:fs/promises';
+import {mkdir, mkdtemp, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {deploymentCommit, deploymentInputs, guardedDeployment} from './deploy';
@@ -392,6 +392,25 @@ test('generated assets and the installed Wrangler invalidate captured inputs', a
     await mkdir(path.join(repository, 'node_modules/wrangler/wrangler-dist'), {
       recursive: true,
     });
+    await mkdir(path.join(repository, 'node_modules/wrangler/bin'), {
+      recursive: true,
+    });
+    await mkdir(path.join(repository, 'node_modules/.bin'), {
+      recursive: true,
+    });
+    await mkdir(
+      path.join(repository, 'node_modules/wrangler/node_modules/esbuild/lib'),
+      {recursive: true}
+    );
+    await mkdir(
+      path.join(repository, 'node_modules/wrangler/node_modules/esbuild/bin'),
+      {recursive: true}
+    );
+    const nativeBinary = path.join(
+      repository,
+      `node_modules/wrangler/node_modules/esbuild/node_modules/@esbuild/${process.platform}-${process.arch}/bin/esbuild`
+    );
+    await mkdir(path.dirname(nativeBinary), {recursive: true});
     const asset = path.join(repository, 'packages/frontend/build/index.html');
     const tool = path.join(
       repository,
@@ -403,6 +422,20 @@ test('generated assets and the installed Wrangler invalidate captured inputs', a
       '{}'
     );
     await Bun.write(tool, 'previewed CLI');
+    const toolFiles = [
+      'node_modules/.bin/wrangler',
+      'node_modules/wrangler/bin/wrangler.js',
+      'node_modules/wrangler/node_modules/esbuild/package.json',
+      'node_modules/wrangler/node_modules/esbuild/lib/main.js',
+      'node_modules/wrangler/node_modules/esbuild/bin/esbuild',
+      `node_modules/wrangler/node_modules/esbuild/node_modules/@esbuild/${process.platform}-${process.arch}/package.json`,
+    ];
+    for (const filename of toolFiles)
+      await Bun.write(
+        path.join(repository, filename),
+        filename.endsWith('/package.json') ? '{}' : 'previewed tool'
+      );
+    await Bun.write(nativeBinary, 'previewed native binary');
     const head = deploymentCommit(repository);
     const initial = await deploymentInputs(repository, head);
     await Bun.write(asset, 'changed asset');
@@ -411,6 +444,20 @@ test('generated assets and the installed Wrangler invalidate captured inputs', a
     expect(await deploymentInputs(repository, head)).toBe(initial);
     await Bun.write(tool, 'changed CLI');
     expect(await deploymentInputs(repository, head)).not.toBe(initial);
+    await Bun.write(tool, 'previewed CLI');
+    for (const executable of [
+      path.join(repository, 'node_modules/wrangler/bin/wrangler.js'),
+      nativeBinary,
+    ]) {
+      await Bun.write(executable, 'changed executable');
+      expect(await deploymentInputs(repository, head)).not.toBe(initial);
+      await Bun.write(
+        executable,
+        executable === nativeBinary
+          ? 'previewed native binary'
+          : 'previewed tool'
+      );
+    }
     const beforeDeletion = await deploymentInputs(repository);
     await rm(path.join(repository, 'README.md'));
     expect(await deploymentInputs(repository)).not.toBe(beforeDeletion);
