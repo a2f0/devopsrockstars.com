@@ -1,4 +1,5 @@
 import {mountSkyline} from '@a2f0/skyline';
+import * as three from '@a2f0/skyline/three';
 import React, {useEffect, useRef} from 'react';
 import styled from 'styled-components';
 import {features} from './featureFlags';
@@ -38,7 +39,16 @@ function Skyline3d() {
     if (preparingHat || !container.current) return;
     const viewer = mountSkyline(container.current, {
       assetsUrl: '/static/skyline/',
+      three,
     });
+    void (async () => {
+      try {
+        await viewer.ready;
+        viewer.element.dataset['skylineReady'] = 'true';
+      } catch {
+        // The shared viewer shows its error and keeps the drawing reachable.
+      }
+    })();
     return () => viewer.destroy();
   }, [preparingHat]);
   if (preparingHat) return <OriginalSkyline />;

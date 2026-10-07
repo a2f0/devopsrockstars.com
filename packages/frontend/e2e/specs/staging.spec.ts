@@ -55,7 +55,10 @@ describe('staging 3D skyline', () => {
       await BasePage.openStaging('');
       await BasePage.waitForAppReady();
       await expect(await browser.$('img#skyline')).toExist();
-      assert.strictEqual(await browser.$$('#skyline > iframe').length, 0);
+      assert.strictEqual(
+        await browser.$$('#skyline > [role="region"]').length,
+        0
+      );
       await browser.execute(() =>
         window.dispatchEvent(new Event('release-hat-artwork'))
       );
@@ -68,7 +71,7 @@ describe('staging 3D skyline', () => {
           ).includes('3D preview ready'),
         {timeout: 20_000}
       );
-      await (await browser.$('#skyline > iframe')).waitForExist({
+      await (await browser.$('#skyline > [role="region"]')).waitForExist({
         timeout: 30_000,
       });
       await expect(await browser.$('img#skyline')).not.toExist();
@@ -101,7 +104,7 @@ describe('staging 3D skyline', () => {
             .getProperty('textContent')
         ).includes('3D preview unavailable')
       );
-      await (await browser.$('#skyline > iframe')).waitForExist({
+      await (await browser.$('#skyline > [role="region"]')).waitForExist({
         timeout: 30_000,
       });
     } finally {
@@ -123,63 +126,64 @@ describe('staging 3D skyline', () => {
         });
         await BasePage.openStaging('');
         await BasePage.waitForAppReady();
-        const viewer = await browser.$('#skyline > iframe');
+        const viewer = await browser.$('#skyline > [role="region"]');
         await viewer.waitForExist({timeout: 30000});
         assert.deepStrictEqual(
           await browser.execute(() => {
-            const frame = document
-              .querySelector('#skyline > iframe')
+            const region = document
+              .querySelector('#skyline > [role="region"]')
               ?.getBoundingClientRect();
-            return [innerWidth, frame?.top, frame?.bottom];
+            return [innerWidth, region?.top, region?.bottom];
           }),
           [width, 0, height]
         );
         await expect(await browser.$('img#skyline')).not.toExist();
         await expect(viewer).toHaveAttribute(
-          'title',
+          'aria-label',
           'Interactive Chicago skyline'
         );
-        await browser.switchFrame(viewer);
-        await expect(await browser.$('nav.controls')).not.toBeDisplayed();
-        const scene = await browser.$('#skyline-3d-scene');
+        await expect(await viewer.shadow$('nav.controls')).not.toExist();
+        const scene = await viewer.shadow$('#skyline-3d-scene');
         await scene.waitForExist({timeout: 30000});
-        await browser.switchFrame(scene);
         await browser.waitUntil(
           () =>
-            browser.execute(() =>
-              Boolean(
-                (window as Window & {__buildingStudy?: {ready: boolean}})
-                  .__buildingStudy?.ready
-              )
+            browser.execute(
+              () =>
+                document
+                  .querySelector('#skyline > [role="region"]')
+                  ?.getAttribute('data-skyline-ready') === 'true'
             ),
           {
             timeout: 30000,
-            timeoutMsg: 'The shared 3D skyline must render its first frame',
+            timeoutMsg: 'The shared skyline must render its first frame',
           }
         );
-        await expect(await browser.$('canvas#building')).toBeDisplayed();
-        await (await browser.$('#menu-toggle')).click();
-        await expect(await browser.$('#show-original')).toBeDisplayed();
-        await (await browser.$('#show-original')).click();
-        await browser.switchFrame(null);
-        await browser.switchFrame(await browser.$('#skyline > iframe'));
-        await expect(await browser.$('#return-skyline-3d')).toBeDisplayed();
-        await (await browser.$('#return-skyline-3d')).click();
+        await expect(await viewer.shadow$('canvas#building')).toBeDisplayed();
+        await (await viewer.shadow$('#menu-toggle')).click();
+        await expect(await viewer.shadow$('#show-original')).toBeDisplayed();
+        await (await viewer.shadow$('#show-original')).click();
+        await expect(
+          await viewer.shadow$('#return-skyline-3d')
+        ).toBeDisplayed();
+        await (await viewer.shadow$('#return-skyline-3d')).click();
         await expect(scene).toBeDisplayed();
-        await browser.switchFrame(null);
         // The host navigation stays above the viewer and remains clickable.
         await (await browser.$('a[href="/company"]')).click();
         await expect(await browser.$('h1=Contact')).toExist();
         await expect(BasePage.skyline).not.toExist();
         await expect(
-          await browser.$('iframe[title="Interactive Chicago skyline"]')
+          await browser.$(
+            '[role="region"][aria-label="Interactive Chicago skyline"]'
+          )
         ).not.toExist();
         await (await browser.$('footer a[href="/"]')).click();
-        await expect(await browser.$('#skyline > iframe')).toExist();
-        assert.strictEqual(await browser.$$('#skyline > iframe').length, 1);
+        await expect(await browser.$('#skyline > [role="region"]')).toExist();
+        assert.strictEqual(
+          await browser.$$('#skyline > [role="region"]').length,
+          1
+        );
       }
     } finally {
-      await browser.switchFrame(null);
       await browser.sendCommand('Emulation.clearDeviceMetricsOverride', {});
       await browser.setWindowSize(1280, 1000);
     }

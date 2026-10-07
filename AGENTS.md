@@ -48,7 +48,8 @@ When addressing Gemini or reviewer feedback:
 Use the exact-pinned `@a2f0/agent-tool` npm package through
 `bun run agent-tool`. Its managed skills in `.agents/skills` and
 `.claude/skills` own the PR workflow; `agent-tool.json` supplies title and
-required CI policy. Update installed skills with `bun run agents:sync` after
+required CI policy. Dependency maintenance follows the shared `update-dependencies`
+skill and [deployment preview policy](docs/dependency-maintenance.md). Update installed skills with `bun run agents:sync` after
 changing the dependency pin, and check them with `bun run agents:check`. Do not
 edit managed skills locally.
 The project `address-gemini-feedback` skill handles review-thread replies;
@@ -122,7 +123,7 @@ Do not create GitHub issues unless the user explicitly requests it.
 ### Setup and Installation
 
 ```bash
-pip install pre-commit
+pip install pre-commit==4.6.2
 pre-commit install
 bun install
 ```
@@ -276,8 +277,8 @@ D1 database.
 | Staging | `staging.devopsrockstars.com` | `store-staging.devopsrockstars.com` |
 
 - `bun run deploy:staging` and `bun run deploy:prod` wrap `scripts/deploy.ts`,
-  which builds the site for the environment, applies D1 migrations, then
-  publishes the store and site Workers in that order
+  which builds the site, dry-runs both Workers, verifies live resource identities
+  and zero pending D1 migrations, then publishes the store and site Workers
 - `patches/miniflare@5.20261001.0-alpha.patch` resolves Miniflare's installed
   Undici transport to avoid Bun's incomplete built-in dispatcher
 - Wrangler owns Worker and asset deployments; Terraform (`terraform/`) owns the

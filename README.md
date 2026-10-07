@@ -51,7 +51,7 @@ skills. The shared package owns its tests; application checks stay in this repo.
 ## Development
 
 ```shell
-pip install pre-commit
+pip install pre-commit==4.6.2
 pre-commit install
 bun install
 bun run start-server
@@ -193,7 +193,7 @@ engines.
 
 With `skyline3d` enabled, Home embeds the shared interactive 3D skyline from
 `@a2f0/skyline` ([a2f0/skyline](https://github.com/a2f0/skyline)). Its assets
-are included only in builds with that flag enabled, and its iframe is removed
+are included only in builds with that flag enabled, and its shadow-root viewer is destroyed
 when leaving Home. If `store` is also enabled, the original SVG stays visible
 while the background hat preview prepares; the 3D skyline starts after
 preparation succeeds or fails so the two models build in sequence. With the
@@ -210,13 +210,23 @@ same way:
 ```shell
 bun run deploy:staging
 bun run deploy:prod
-scripts/deploy.ts staging --dry-run   # build and validate without publishing
+bun scripts/deploy.ts staging --dry-run   # complete bundle and live-resource preview
 ```
 
-Each deployment builds the site for the environment, applies pending D1
-migrations, publishes the store Worker, then publishes the site Worker.
+Each deployment builds the site, dry-runs both Workers, and checks existing live
+identities before publishing the store and site Workers. D1 must have zero
+pending migrations; missing or incomplete resource evidence holds deployment.
+Set the verified `CLOUDFLARE_ACCOUNT_ID` and API token. CI uses the repository
+account variable, and serializes deployments per environment. See
+[dependency maintenance](docs/dependency-maintenance.md#deployment-preview-gate)
+for exact coverage, permissions, and the migration restriction.
 
 ### Cloudflare setup
+
+The following describes the original bootstrap requirements. The maintenance
+deployment guard requires these resources and their migration table to already
+exist; it cannot bootstrap a new environment. New resources or schema changes
+need a separately reviewed execution preview before any mutation.
 
 1. Add `devopsrockstars.com` to Cloudflare, review the imported record scan
    against Route 53 — the Google Workspace `MX` records especially — and only
@@ -231,14 +241,13 @@ migrations, publishes the store Worker, then publishes the site Worker.
      devopsrockstars-store-<env> --location=enam
    ```
 
-3. Apply the schema, then set the actual price and inventory. The migration
-   seeds the historical $20 price and zero stock as safe placeholders.
+3. The initial schema seeded the historical $20 price and zero stock as safe
+   placeholders. `bun run db:migrate:prod` now verifies the existing migration
+   table and requires zero pending migrations; it applies no remote SQL. Schema,
+   price and inventory changes require their own reviewed execution preview.
 
    ```shell
    bun run db:migrate:prod
-   bun run --cwd packages/backend --bun wrangler d1 execute \
-     devopsrockstars-store --env prod --remote \
-     --command "UPDATE product_variants SET unit_amount = 2000, inventory_quantity = 1"
    ```
 
 4. Add the Stripe keys as Worker secrets, once per environment. Staging takes
@@ -257,14 +266,15 @@ migrations, publishes the store Worker, then publishes the site Worker.
    `payment_intent.payment_failed`, and `payment_intent.canceled`. Use each
    endpoint's signing secret for that environment's `STRIPE_WEBHOOK_SECRET`.
 
-6. Publish both environments, then apply Terraform to attach the custom
-   domains. Wrangler must publish a Worker before Terraform can point a
-   hostname at it.
+6. Initial provisioning published the Workers before Terraform attached their
+   custom domains. Maintenance deploys require the existing Workers and domains
+   to pass the live inspection, so they never use that bootstrap sequence.
+   Terraform changes require a complete refreshed saved plan against the real
+   backend with no resource deletion or replacement before applying it.
 
    ```shell
    bun run deploy:staging
    bun run deploy:prod
-   cd terraform && ./apply.sh
    ```
 
    Terraform needs `TF_VAR_cloudflare_api_token` in the environment and
@@ -286,21 +296,12 @@ migrations, publishes the store Worker, then publishes the site Worker.
    `pending`, so
    the Worker hostnames cannot be tested before the move.
 
-### Retiring a renamed Worker
+### Worker identity
 
-Renaming a Worker publishes a new one; the old deployment keeps running, along
-with its cron trigger and its bindings to the same production D1 database. The
-`devopsrockstars-store` Worker that preceded `devopsrockstars-store-prod` has
-been deleted for exactly that reason. After any future rename, confirm the
-cutover, then retire the predecessor:
-
-```shell
-bun run --cwd packages/backend --bun wrangler delete --name <old-worker>
-```
-
-Check for stragglers with `wrangler deployments list --name <old-worker>`, and
-remember that Worker secrets cannot be read back — a rename means re-adding
-every secret to the new Worker before it can serve traffic.
+Keep the existing Worker names, domains and database bindings during maintenance.
+A rename or retirement is a separate infrastructure operation. The dependency
+upgrade workflow never deletes, replaces, recreates or retires a resource; its
+preview guard holds any identity change.
 
 ### Infrastructure
 
