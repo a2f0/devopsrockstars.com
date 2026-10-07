@@ -356,8 +356,8 @@ describe('staging 3D skyline', () => {
         assert.strictEqual(await browser.$$(skylineRegion).length, 1);
         await waitForSkylineFrame();
         // The hat preview and the viewer share the page's three.js: the
-        // viewer never loads its own copy, and three.js never warns about a
-        // second instance.
+        // viewer never loads its own copy, and three.js logs no warnings,
+        // such as a second instance or a removed shadow map type.
         assert.deepStrictEqual(
           await browser.execute(() =>
             performance
@@ -371,7 +371,8 @@ describe('staging 3D skyline', () => {
         );
         assert.deepStrictEqual(
           (await probedMessages()).filter(message =>
-            /three\.js|skyline/iu.test(message)
+            // three.js prefixes its warnings with `THREE.`.
+            /\bthree\b|skyline/iu.test(message)
           ),
           []
         );
