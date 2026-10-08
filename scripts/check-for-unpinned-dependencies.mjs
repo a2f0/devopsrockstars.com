@@ -35,7 +35,7 @@ for (const manifest of manifests) {
         unpinned.push(
           `${manifest}: overrides/${selector}: parent selector is not exact`
         );
-      if (!exactVersion.test(replacement))
+      if (typeof replacement !== 'string' || !exactVersion.test(replacement))
         unpinned.push(`${manifest}: overrides/${selector}: ${replacement}`);
       continue;
     }

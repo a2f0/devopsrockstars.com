@@ -105,3 +105,48 @@ test('an approved checked plan is the only plan passed to apply', async () => {
   expect(result.planRemoved).toBe(true);
   expect(result.directoryRemoved).toBe(true);
 });
+
+test('the installed agent-tool rejects a saved plan with a delete action', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'terraform-plan-check-'));
+  try {
+    const plan = path.join(root, 'plan.json');
+    await Bun.write(
+      plan,
+      JSON.stringify({
+        format_version: '1.2',
+        terraform_version: '1.14.0',
+        complete: true,
+        planned_values: {},
+        configuration: {},
+        resource_changes: [
+          {
+            address: 'cloudflare_workers_script.existing',
+            mode: 'managed',
+            change: {actions: ['delete']},
+          },
+        ],
+      })
+    );
+    const cli = path.resolve(
+      import.meta.dir,
+      '../node_modules/.bin/agent-tool'
+    );
+    const result = Bun.spawnSync([
+      cli,
+      'dependencies',
+      'check-terraform-plan',
+      plan,
+    ]);
+    expect(result.exitCode).toBe(1);
+    const verdict = JSON.parse(result.stdout.toString()) as {
+      ok: boolean;
+      issues: string[];
+    };
+    expect(verdict.ok).toBe(false);
+    expect(verdict.issues.join(' ')).toContain(
+      'deletion or replacement is forbidden'
+    );
+  } finally {
+    await rm(root, {recursive: true, force: true});
+  }
+});

@@ -42,6 +42,7 @@ test.each([
   [{'parent@1.2.3': {child: '^2.3.4'}}, 'overrides/parent@1.2.3/child'],
   [{'parent@^1': '2.3.4'}, 'parent selector is not exact'],
   [{'parent@1.2.3': '^2.3.4'}, 'overrides/parent@1.2.3'],
+  [{'parent@1.2.3': 123}, 'overrides/parent@1.2.3'],
 ] as const)(
   'override selector and replacement must be exact',
   async (overrides, message) => {
