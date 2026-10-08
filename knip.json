@@ -27,5 +27,5 @@
       "project": ["src/**/*.ts"]
     }
   },
-  "ignoreDependencies": ["@biomejs/biome", "markdownlint-cli2", "wrangler"]
+  "ignoreDependencies": ["@biomejs/biome", "markdownlint-cli2"]
 }

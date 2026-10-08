@@ -27,6 +27,27 @@ for (const manifest of manifests) {
       }
     }
   }
+  for (const [selector, replacement] of Object.entries(pkg.overrides ?? {})) {
+    const versionSeparator = selector.lastIndexOf('@');
+    const parentVersion = selector.slice(versionSeparator + 1);
+    if (typeof replacement !== 'object' || replacement === null) {
+      if (versionSeparator > 0 && !exactVersion.test(parentVersion))
+        unpinned.push(
+          `${manifest}: overrides/${selector}: parent selector is not exact`
+        );
+      if (typeof replacement !== 'string' || !exactVersion.test(replacement))
+        unpinned.push(`${manifest}: overrides/${selector}: ${replacement}`);
+      continue;
+    }
+    if (!exactVersion.test(parentVersion))
+      unpinned.push(
+        `${manifest}: overrides/${selector}: parent selector is not exact`
+      );
+    for (const [name, spec] of Object.entries(replacement)) {
+      if (typeof spec !== 'string' || !exactVersion.test(spec))
+        unpinned.push(`${manifest}: overrides/${selector}/${name}: ${spec}`);
+    }
+  }
 }
 
 if (unpinned.length > 0) {

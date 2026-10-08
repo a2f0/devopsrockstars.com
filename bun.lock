@@ -1,11 +1,11 @@
 {
-  "lockfileVersion": 2,
+  "lockfileVersion": 3,
   "configVersion": 1,
   "workspaces": {
     "": {
       "name": "devopsrockstars",
       "devDependencies": {
-        "@a2f0/agent-tool": "0.1.4",
+        "@a2f0/agent-tool": "0.1.10",
         "@biomejs/biome": "2.5.15",
         "@tsconfig/strictest": "2.0.8",
         "@types/bun": "1.4.2",
@@ -13,7 +13,7 @@
         "@types/node": "26.6.4",
         "@types/react": "19.3.0",
         "@types/react-dom": "19.3.0",
-        "knip": "6.39.0",
+        "knip": "6.40.0",
         "markdownlint-cli2": "0.23.3",
         "typescript": "7.0.2",
         "wrangler": "4.147.0",
@@ -55,10 +55,16 @@
   },
   "patchedDependencies": {
     "miniflare@5.20261001.0-alpha": "patches/miniflare@5.20261001.0-alpha.patch",
+    "markdownlint@0.41.1": "patches/markdownlint@0.41.1.patch",
     "expect@30.5.2": "patches/expect@30.5.2.patch",
   },
+  "overrides": {
+    "markdownlint-cli2@0.23.3": {
+      "smol-toml": "1.9.0",
+    },
+  },
   "packages": {
-    "@a2f0/agent-tool": ["@a2f0/agent-tool@0.1.4", "", { "bin": { "agent-tool": "src/index.ts" } }, "sha512-GeeE+LwLxL6NQgft3Nn1J+46pdSACJz3lzCQUayaTh/XIjbwcI2Dzg7xUpJ1apSZAWokapD6wgkEfBxEBPHsgA=="],
+    "@a2f0/agent-tool": ["@a2f0/agent-tool@0.1.10", "", { "bin": { "agent-tool": "src/index.ts" } }, "sha512-kuAMx7swbLNU86c6fbSUgs88rXDLOvbtVlABEqaJVrsWdNetsg1KEkURZZlyVZq7Jjl//Koij/WoRiQ2RAmZ7Q=="],
 
     "@a2f0/skyline": ["@a2f0/skyline@0.2.2", "", { "dependencies": { "@types/three": "0.186.0" }, "peerDependencies": { "three": "~0.186.0" }, "optionalPeers": ["three"] }, "sha512-IHyI+zy3WoJW2lgXoBP+7q5KvoBMzgCleyK/OCwC8XG6qpxiSnti6Mbhohecpe07eBidDLAb3TJTZwRC0RGWIg=="],
 
@@ -780,7 +786,7 @@
 
     "kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 
-    "knip": ["knip@6.39.0", "", { "dependencies": { "fdir": "6.5.0", "formatly": "0.7.1", "get-tsconfig": "4.14.3", "jiti": "2.7.0", "oxc-parser": "0.150.0", "oxc-resolver": "11.24.2", "picomatch": "4.0.7", "smol-toml": "1.9.0", "strip-json-comments": "5.0.3", "tinyglobby": "0.2.17", "unbash": "4.0.12", "yaml": "2.9.1", "zod": "4.6.5" }, "bin": { "knip": "bin/knip.js", "knip-bun": "bin/knip-bun.js" } }, "sha512-Y7g6Ve1ATMox1u1v+gx3z9LTlvzVLTJISm/LVn9TgBU4qc7OoC63AWGO8qCFPVDDdaqlYdXkDDvvO1METBfTRw=="],
+    "knip": ["knip@6.40.0", "", { "dependencies": { "fdir": "^6.5.0", "formatly": "^0.7.0", "get-tsconfig": "4.14.3", "jiti": "^2.7.0", "oxc-parser": "^0.150.0", "oxc-resolver": "11.24.2", "picomatch": "^4.0.7", "smol-toml": "^1.8.0", "strip-json-comments": "5.0.3", "tinyglobby": "^0.2.17", "unbash": "^4.0.11", "yaml": "^2.9.1", "zod": "^4.4.3" }, "bin": { "knip": "bin/knip.js", "knip-bun": "bin/knip-bun.js" } }, "sha512-5Lp/ANJu3AkW5f+J+2QG14z7xKZGi/ybb5MU1EWjeGdt6MpuIaLpLFiyBi0ZKryTiuTHiJqo/WKJRaWYimvavw=="],
 
     "lazystream": ["lazystream@1.0.1", "", { "dependencies": { "readable-stream": "2.3.8" } }, "sha512-b94GiNHQNy6JNTrt5w6zNyffMrNkXZb3KTkCZJb2V1xaEGCk093vkZ2jk3tpaeP33/OiXC+WvK9AxUebnf5nbw=="],
 
@@ -1163,8 +1169,6 @@
     "locate-app/type-fest": ["type-fest@4.26.0", "", {}, "sha512-OduNjVJsFbifKb57UqZ2EMP1i4u64Xwow3NYXUtBbD4vIwJdQd4+xl8YDou1dlm4DVrtwT/7Ky8z8WyCULVfxw=="],
 
     "markdown-it/argparse": ["argparse@3.0.2", "", {}, "sha512-mFdDM6WqWKraGLsVb+C9CahPnzTXOefAOLq3jYcca2YZ8bEWpr++Tzj+zSaKW9+X9L5uSxcm1AZ3Y6aZJ09OhQ=="],
-
-    "markdownlint-cli2/smol-toml": ["smol-toml@1.8.0", "", {}, "sha512-kCZr2V3ch9i00x8zXRhjUNVcjG9ijES5dDudkXvUVCT5QlJNQWElSJdZqyPemffHoLNUYwOcou0Fy+ojN0uHSQ=="],
 
     "micromatch/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 
