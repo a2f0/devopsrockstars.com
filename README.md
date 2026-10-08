@@ -288,20 +288,14 @@ need a separately reviewed execution preview before any mutation.
    resource deletion or replacement:
 
    ```shell
-   set -euo pipefail
    cd terraform
    ./init.sh
-   plan_dir=$(mktemp -d)
-   trap 'rm -f "$plan_dir/plan.json" "$plan_dir/reviewed.tfplan"; rmdir "$plan_dir"' EXIT
-   terraform plan -input=false -var-file=main.tfvars -out="$plan_dir/reviewed.tfplan"
-   terraform show -json "$plan_dir/reviewed.tfplan" > "$plan_dir/plan.json"
-   ../node_modules/.bin/agent-tool dependencies check-terraform-plan "$plan_dir/plan.json"
-   terraform show "$plan_dir/reviewed.tfplan"
-   printf 'After reviewing the plan, type APPLY to continue: '
-   read -r response
-   test "$response" = APPLY
-   terraform apply "$plan_dir/reviewed.tfplan"
+   ./apply.sh
    ```
+
+   `apply.sh` uses a private saved plan, rejects destructive or incomplete
+   actions, shows the plan for review, and requires an explicit `APPLY` response
+   before executing it. The private plan files are removed on exit.
 
    Routine Worker maintenance uses `bun run deploy:staging` and
    `bun run deploy:prod` after their guarded dry-runs.

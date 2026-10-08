@@ -525,6 +525,27 @@ test('missing account credentials fail before an API call', () => {
   );
 });
 
+test('D1 migration inspection sends the fixed read-only query to the account database', async () => {
+  const read = cloudflareReader(account, 'SYNTHETIC_PRIVATE_TOKEN');
+  const database = '35891cf5-2187-43f8-b844-8b96a16e70dc';
+  const sql = 'SELECT name FROM d1_migrations ORDER BY id';
+  const fetch = spyOn(globalThis, 'fetch').mockResolvedValue(
+    Response.json({success: true, errors: null, result: []})
+  );
+  try {
+    expect(await read(`/d1/database/${database}/query`, sql)).toEqual([]);
+    expect(String(fetch.mock.calls[0]?.[0])).toBe(
+      `https://api.cloudflare.com/client/v4/accounts/${account}/d1/database/${database}/query`
+    );
+    expect(fetch.mock.calls[0]?.[1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({sql}),
+    });
+  } finally {
+    fetch.mockRestore();
+  }
+});
+
 test('the API reader rejects other SQL or SQL endpoints before making a request', async () => {
   const read = cloudflareReader(account, 'SYNTHETIC_PRIVATE_TOKEN');
   const fetch = spyOn(globalThis, 'fetch');
