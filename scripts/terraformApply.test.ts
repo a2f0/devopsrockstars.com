@@ -30,6 +30,7 @@ case "$1" in
       case "$arg" in -out=*) plan_file=\${arg#-out=};; esac
     done
     printf 'saved plan' > "$plan_file"
+    printf 'generated artifact' > "$(dirname "$plan_file")/extra.tmp"
     printf '%s\\n' "$plan_file" > "$PLAN_LOG"
     ;;
   show)

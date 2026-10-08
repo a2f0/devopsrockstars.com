@@ -94,11 +94,15 @@ The gate checks the unchanged supported configuration and installed tool pins,
 builds once, dry-runs **both** Workers, and inspects the real account's existing
 Worker names, complete bindings and secret names, rate-limit namespaces,
 compatibility date, disabled `workers.dev`/preview URLs, cron triggers, custom
-domains and zone IDs. It rejects unreviewed resource types, routes, incomplete
+domains, zone IDs, and the live observability enabled setting. The settings API
+does not expose the site's asset manifest; bundle dry-runs and post-deploy smoke
+checks cover asset behavior. It rejects unreviewed resource types, routes, incomplete
 API inventories, missing resources, and identity changes. It rechecks source,
 generated assets, and installed Wrangler and esbuild entrypoints plus live
 identities before each publication. The backend currently has no third-party
-runtime dependencies; adding one requires expanding this input check.
+runtime dependencies; adding one requires expanding this input check. This is a
+targeted digest of installed entrypoints, not a checksum of all `node_modules`;
+CI's frozen install binds the package graph to `bun.lock`.
 The expected identities are intentionally fixed independently of Wrangler's
 configuration: editing a Worker name, D1 binding, namespace, runtime date,
 domain, cron, or secret set requires its own reviewed infrastructure change

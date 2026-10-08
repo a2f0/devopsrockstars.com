@@ -216,6 +216,7 @@ async function fixture(environment: 'staging' | 'prod' = 'staging') {
     const endpoint = `/workers/scripts/${worker.name}`;
     metadata[`${endpoint}/settings`] = {
       compatibility_date: worker.date,
+      observability: {enabled: true},
       bindings: [
         ...worker.bindings,
         ...worker.secrets.map(name => ({name, type: 'secret_text'})),
@@ -248,6 +249,16 @@ test('complete fixture identities and existing migration metadata pass both envi
       requests.filter(request => request.sql).map(request => request.sql)
     ).toEqual(['SELECT name FROM d1_migrations ORDER BY id']);
   }
+});
+
+test('a changed live observability policy holds deployment', async () => {
+  const {target, metadata, read} = await fixture();
+  const endpoint = `/workers/scripts/${target.workers.backend.name}/settings`;
+  const settings = metadata[endpoint] as Record<string, unknown>;
+  settings['observability'] = {enabled: false};
+  await expect(inspectDeployment(target, read)).rejects.toThrow(
+    'live observability policy'
+  );
 });
 
 test('reviewed runtime transitions accept only the old or desired state until publication', async () => {
@@ -348,6 +359,7 @@ test.each(['removed', 'replaced', 'unknown'])(
     const bindings = target.workers.backend.bindings;
     metadata[`/workers/scripts/${target.workers.backend.name}/settings`] = {
       compatibility_date: target.workers.backend.date,
+      observability: {enabled: true},
       bindings:
         kind === 'removed'
           ? []

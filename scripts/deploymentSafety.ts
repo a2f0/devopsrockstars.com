@@ -346,6 +346,11 @@ export async function inspectDeployment(
     const endpoint = `/workers/scripts/${worker.name}`;
     const settings = object(await read(`${endpoint}/settings`));
     equal(settings['compatibility_flags'] ?? [], [], 'live runtime flags');
+    equal(
+      object(settings['observability'])['enabled'],
+      true,
+      'live observability policy'
+    );
     const bindings = array(settings['bindings']).map(normalizedBinding);
     const alternatives = [worker];
     const previous = target.previousWorkers?.[workspace];
@@ -501,7 +506,11 @@ export function cloudflareReader(
         (pages['per_page'] !== undefined &&
           (typeof pages['per_page'] !== 'number' || pages['per_page'] < count))
       )
-        throw new Error('Deployment held: resource inventory is incomplete');
+        throw new Error(
+          endpoint === '/zones'
+            ? 'Deployment held: zone inventory is incomplete (50-zone page limit)'
+            : 'Deployment held: resource inventory is incomplete'
+        );
     }
     return body['result'];
   };

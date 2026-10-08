@@ -30,6 +30,7 @@ test('override pinning accepts exact parent and replacement versions', async () 
         '@scope/parent@1.2.3': {child: '2.3.4'},
         'other@3.4.5': '4.5.6',
         'smol-toml': '1.9.0',
+        '@scope/child': '2.3.4',
       })
     ).exitCode
   ).toBe(0);
@@ -39,6 +40,7 @@ test.each([
   [{parent: {child: '2.3.4'}}, 'parent selector is not exact'],
   [{'@scope/parent': {child: '2.3.4'}}, 'parent selector is not exact'],
   [{'parent@1.2.3': {child: '^2.3.4'}}, 'overrides/parent@1.2.3/child'],
+  [{'parent@^1': '2.3.4'}, 'parent selector is not exact'],
   [{'parent@1.2.3': '^2.3.4'}, 'overrides/parent@1.2.3'],
 ] as const)(
   'override selector and replacement must be exact',

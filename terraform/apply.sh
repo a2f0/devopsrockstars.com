@@ -6,8 +6,7 @@ cd "$script_dir"
 
 private_plan_dir="$(mktemp -d)"
 cleanup() {
-  rm -f -- "$private_plan_dir/plan.json" "$private_plan_dir/reviewed.tfplan"
-  rmdir -- "$private_plan_dir"
+  rm -rf -- "$private_plan_dir"
 }
 trap cleanup EXIT
 
