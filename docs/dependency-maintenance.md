@@ -7,20 +7,20 @@ registries, read migrations, and choose compatible groups before changing pins.
 Cached metadata must retain its observation date; unavailable fresh metadata is
 a reported coverage limit, never a reason to downgrade newer installed versions.
 
-## Current upgrades and compatibility
+## Current pins and compatibility
 
 - Agent-tool 0.1.10 is the published exact npm pin. Its installer generates both
   harnesses' skills and `.agent-tool-skills.json`; keep them with `bun.lock`.
-- Skyline 0.2.2 mounts a region in an open shadow root, replacing the iframe.
-  The React effect handles `ready`, shares the host's Three.js through
+- The retained Skyline 0.2.2 mounts a region in an open shadow root. The React
+  effect handles `ready`, shares the host's Three.js through
   `@a2f0/skyline/three`, and always destroys the viewer on cleanup. Browser tests
   use the region/shadow DOM and verify readiness, controls, and navigation cleanup.
-  The asset build uses a fresh dedicated temporary directory and removes the
-  previous build before writing a complete new asset set. Three 0.186.1 and its
-  0.186 types follow Skyline's supported peer range. See the installed package's
+  The retained asset build uses a fresh dedicated temporary directory and removes
+  the previous build before writing a complete new asset set. The existing Three
+  0.186.1 and its 0.186 types follow Skyline's supported peer range. See its
   [migration guide](https://github.com/a2f0/skyline/blob/main/docs/package.md).
-- TypeScript 7.0.2 remains the native CLI compiler here. Repository scripts do
-  not import its removed JavaScript compiler API; Knip 6.40 uses its own Oxc
+- The retained TypeScript 7.0.2 remains the native CLI compiler here. Repository
+  scripts do not import its removed JavaScript compiler API; Knip 6.40 uses Oxc
   analysis. Compile and actual Knip checks must pass before shipping.
 - Preserve `expect@30.5.2.patch` for Bun's CommonJS interoperability and
   `miniflare@5.20261001.0-alpha.patch` for its installed Undici transport.

@@ -288,6 +288,7 @@ need a separately reviewed execution preview before any mutation.
    resource deletion or replacement:
 
    ```shell
+   bun install --frozen-lockfile
    cd terraform
    ./init.sh
    ./apply.sh

@@ -48,10 +48,11 @@ When addressing Gemini or reviewer feedback:
 Use the exact-pinned `@a2f0/agent-tool` npm package through
 `bun run agent-tool`. Its managed skills in `.agents/skills` and
 `.claude/skills` own the PR workflow; `agent-tool.json` supplies title and
-required CI policy. Dependency maintenance follows the shared `update-dependencies`
-skill and [deployment preview policy](docs/dependency-maintenance.md). Update installed skills with `bun run agents:sync` after
-changing the dependency pin, and check them with `bun run agents:check`. Do not
-edit managed skills locally.
+required CI policy. Dependency maintenance follows the shared
+`update-dependencies` skill and
+[deployment preview policy](docs/dependency-maintenance.md). Update installed
+skills with `bun run agents:sync` after changing the dependency pin, and check
+them with `bun run agents:check`. Do not edit managed skills locally.
 The project `address-gemini-feedback` skill handles review-thread replies;
 `scripts/check-agent-skills-in-sync.mjs` keeps project skills identical between
 `.agents/skills` and `.claude/skills` through the pre-commit hook.
