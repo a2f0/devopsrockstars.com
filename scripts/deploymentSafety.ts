@@ -481,7 +481,16 @@ export function cloudflareReader(
       (body['errors'] !== null && array(body['errors']).length)
     )
       throw new Error('Deployment preview API did not succeed');
-    if (endpoint === '/workers/domains' || endpoint === '/zones') {
+    const pagedList =
+      endpoint === '/workers/domains' ||
+      endpoint === '/zones' ||
+      /^\/zones\/[a-f0-9]{32}\/workers\/routes$/u.test(endpoint);
+    if (
+      pagedList &&
+      (endpoint === '/workers/domains' ||
+        endpoint === '/zones' ||
+        body['result_info'] !== undefined)
+    ) {
       const pages = object(body['result_info']);
       const count = array(body['result']).length;
       if (

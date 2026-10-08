@@ -109,7 +109,8 @@ existing Worker variables that are absent from the new bundle; the live binding
 inventory must still match the reviewed configuration before either upload.
 The account's Workers Domains API returned complete `result_info` pagination
 in the authenticated 2026-10-07 preview. A different or incomplete page holds
-deployment.
+deployment. Zone route pagination is also checked when the API supplies
+`result_info`.
 The production store flag is off, and its existing Worker has only
 `CHECKOUT_HASH_SECRET`; staging also has the three Stripe secrets. The guard
 preserves those exact live secret sets. A production store launch needs a

@@ -538,6 +538,17 @@ test('incomplete API inventory and sensitive errors fail closed without leaking 
     expect(await read(`/zones/${zone}/workers/routes`)).toEqual([]);
     fetch.mockResolvedValue(
       Response.json({
+        success: true,
+        errors: null,
+        result: [],
+        result_info: {page: 1, total_pages: 2, total_count: 1},
+      })
+    );
+    await expect(read(`/zones/${zone}/workers/routes`)).rejects.toThrow(
+      'incomplete'
+    );
+    fetch.mockResolvedValue(
+      Response.json({
         success: false,
         errors: [{message: 'SYNTHETIC_PRIVATE_TOKEN'}],
       })
