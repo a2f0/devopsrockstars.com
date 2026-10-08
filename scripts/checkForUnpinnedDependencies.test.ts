@@ -29,6 +29,7 @@ test('override pinning accepts exact parent and replacement versions', async () 
       await check({
         '@scope/parent@1.2.3': {child: '2.3.4'},
         'other@3.4.5': '4.5.6',
+        'smol-toml': '1.9.0',
       })
     ).exitCode
   ).toBe(0);

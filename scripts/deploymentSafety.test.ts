@@ -8,6 +8,7 @@ import {
   guardedDeployment,
   parseDeploymentRequest,
   verifyDeploymentRuntime,
+  wranglerDeployCommand,
 } from './deploy';
 import {
   approvedPreviousWorkers,
@@ -61,6 +62,36 @@ test('every package remote deploy script uses the shared guard', async () => {
     expect(manifests[index].scripts['deploy:prod']).toBe(
       `bun ../../scripts/deploy.ts prod --worker=${worker}`
     );
+  }
+});
+
+test('Wrangler previews and publications use the expected Worker directory and flags', () => {
+  for (const environment of ['staging', 'prod'] as const) {
+    for (const worker of ['backend', 'frontend'] as const) {
+      const preview = wranglerDeployCommand(root, worker, environment, true);
+      const publish = wranglerDeployCommand(root, worker, environment, false);
+      expect(preview.cwd).toBe(path.join(root, 'packages', worker));
+      expect(publish.cwd).toBe(preview.cwd);
+      expect(preview.args).toEqual([
+        'run',
+        '--bun',
+        'wrangler',
+        'deploy',
+        '--env',
+        environment,
+        '--keep-vars',
+        '--dry-run',
+      ]);
+      expect(publish.args).toEqual([
+        'run',
+        '--bun',
+        'wrangler',
+        'deploy',
+        '--env',
+        environment,
+        '--keep-vars',
+      ]);
+    }
   }
 });
 

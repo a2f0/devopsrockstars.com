@@ -211,6 +211,27 @@ export function verifyDeploymentRuntime(
   return githubActions ? githubSha : undefined;
 }
 
+export function wranglerDeployCommand(
+  root: string,
+  workspace: WorkerName,
+  environment: DeploymentEnvironment,
+  preview: boolean
+) {
+  return {
+    args: [
+      'run',
+      '--bun',
+      'wrangler',
+      'deploy',
+      '--env',
+      environment,
+      '--keep-vars',
+      ...(preview ? ['--dry-run'] : []),
+    ],
+    cwd: path.join(root, 'packages', workspace),
+  };
+}
+
 if (import.meta.main) {
   const request = parseDeploymentRequest(process.argv.slice(2));
   const selected = request.environment;
@@ -242,9 +263,9 @@ if (import.meta.main) {
         : 'https://store.devopsrockstars.com',
     WRANGLER_SEND_METRICS: 'false',
   };
-  function run(arguments_: string[], workspace?: WorkerName) {
+  function run(arguments_: string[], cwd = root) {
     const result = Bun.spawnSync([process.execPath, ...arguments_], {
-      cwd: workspace ? path.join(root, 'packages', workspace) : root,
+      cwd,
       env,
       stdin: 'inherit',
       stdout: 'inherit',
@@ -258,20 +279,10 @@ if (import.meta.main) {
     process.env['CLOUDFLARE_API_TOKEN']
   );
   const target = await deploymentTarget(root, selected);
-  const publish = (workspace: WorkerName, preview: boolean) =>
-    run(
-      [
-        'run',
-        '--bun',
-        'wrangler',
-        'deploy',
-        '--env',
-        selected,
-        '--keep-vars',
-        ...(preview ? ['--dry-run'] : []),
-      ],
-      workspace
-    );
+  const publish = (workspace: WorkerName, preview: boolean) => {
+    const command = wranglerDeployCommand(root, workspace, selected, preview);
+    run(command.args, command.cwd);
+  };
   await guardedDeployment(
     {
       build: async () => {

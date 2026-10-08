@@ -47,6 +47,9 @@ Its parser returns null-prototype objects, so `markdownlint@0.41.1.patch` preser
 nested rule options that the library otherwise silently drops. The actual CLI
 test proves custom limits and disabled rules fail without the patch and pass
 with it; glob ignores and malformed configuration retain their behavior.
+This repository's current lint config is JSONC; the tested TOML path is a
+compatibility safeguard for the installed CLI, rather than a current config
+requirement.
 Remove the override when the owner naturally selects a fixed parser; remove the
 patch when upstream preserves those options and the CLI regression passes
 unpatched. Repository maintainers review both by **2026-11-07** or on either

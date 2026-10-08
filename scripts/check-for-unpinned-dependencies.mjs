@@ -28,16 +28,16 @@ for (const manifest of manifests) {
     }
   }
   for (const [selector, replacement] of Object.entries(pkg.overrides ?? {})) {
-    const parentVersion = selector.slice(selector.lastIndexOf('@') + 1);
-    if (!exactVersion.test(parentVersion))
-      unpinned.push(
-        `${manifest}: overrides/${selector}: parent selector is not exact`
-      );
     if (typeof replacement !== 'object' || replacement === null) {
       if (!exactVersion.test(replacement))
         unpinned.push(`${manifest}: overrides/${selector}: ${replacement}`);
       continue;
     }
+    const parentVersion = selector.slice(selector.lastIndexOf('@') + 1);
+    if (!exactVersion.test(parentVersion))
+      unpinned.push(
+        `${manifest}: overrides/${selector}: parent selector is not exact`
+      );
     for (const [name, spec] of Object.entries(replacement)) {
       if (typeof spec !== 'string' || !exactVersion.test(spec))
         unpinned.push(`${manifest}: overrides/${selector}/${name}: ${spec}`);

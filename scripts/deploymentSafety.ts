@@ -117,7 +117,9 @@ export async function deploymentTarget(
   root: string,
   environment: DeploymentEnvironment
 ): Promise<DeploymentTarget> {
-  // Fixed identities are reviewed deployment policy; see docs/dependency-maintenance.md#deployment-preview-gate.
+  // Fixed identities intentionally differ from editable Wrangler config.
+  // Planned runtime transitions use the reviewed deployment-transition.json
+  // workflow in docs/dependency-maintenance.md#deployment-preview-gate.
   const configurations: Partial<DeploymentTarget['workers']> = {};
   let database: DeploymentTarget['database'] | undefined;
   for (const workspace of ['backend', 'frontend'] as const) {
