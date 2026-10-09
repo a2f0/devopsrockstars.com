@@ -473,6 +473,14 @@ describe('store page', () => {
     const resetFixtures = await browser.addInitScript(fixtures => {
       const originalFetch = globalThis.fetch.bind(globalThis);
       const browserWindow: Window = window;
+      // Holds a request until the test sets this session flag, so the test
+      // can check the page while the request is in flight however slowly the
+      // browser runs.
+      const heldUntil = async (flag: string) => {
+        while (!sessionStorage.getItem(flag)) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      };
       browserWindow.fetch = async (input, init) => {
         const inputUrl =
           typeof input === 'string'
@@ -492,9 +500,10 @@ describe('store page', () => {
             '__store_test_checkout_calls',
             String(calls + 1)
           );
-          // The first reservation is slow enough to type into the form.
+          // The first reservation waits for the test, which types into the
+          // form meanwhile.
           if (calls === 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await heldUntil('__store_test_release_checkout');
           }
           sessionStorage.setItem(
             '__store_test_checkout_body',
@@ -523,9 +532,9 @@ describe('store page', () => {
         }
         const order = /^\/api\/orders\/([^/]+)(\/cancel)?$/u.exec(url.pathname);
         if (order?.[1] && order[2] && init?.method === 'POST') {
-          // A slow cancellation that fails, as when a payment is processing.
+          // A held cancellation that fails, as when a payment is processing.
           if (sessionStorage.getItem('__store_test_cancel_fails')) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await heldUntil('__store_test_release_cancel');
             return Response.json(
               {
                 error: {
@@ -640,9 +649,15 @@ describe('store page', () => {
       await (await browser.$('input[name="city"]')).setValue('New York');
       await (await browser.$('input[name="state"]')).setValue('NY');
       await (await browser.$('input[name="postal-code"]')).setValue('10001');
-      await (await browser.$('button=Continue to payment')).click();
+      const continueToPayment = await browser.$('button=Continue to payment');
+      await expect(continueToPayment).toBeEnabled();
+      await continueToPayment.click();
       await expect(await browser.$('button=Reserving…')).toExist();
       await customerName.setValue('Grace Brewster Hopper');
+      await expect(customerName).toHaveValue('Grace Brewster Hopper');
+      await browser.execute(() =>
+        sessionStorage.setItem('__store_test_release_checkout', 'true')
+      );
 
       const shippingAddress = await browser.$('[data-shipping-address]');
       const testCalls = () =>
@@ -797,6 +812,9 @@ describe('store page', () => {
       await (await browser.$('button=Cancel checkout')).click();
       await expect(await browser.$('button=Canceling…')).toExist();
       await expect(edit).toBeDisabled();
+      await browser.execute(() =>
+        sessionStorage.setItem('__store_test_release_cancel', 'true')
+      );
       await expect(
         await browser.$(
           'p=The payment is already processing and cannot be canceled here.'
@@ -823,6 +841,7 @@ describe('store page', () => {
         '[]'
       );
     } finally {
+      await browser.execute(() => sessionStorage.clear());
       await resetFixtures.remove();
     }
   });
@@ -857,13 +876,16 @@ describe('store page', () => {
     });
 
     try {
+      // Start without a pending checkout, which shows payment instead of the
+      // form.
       await BasePage.openStaging('');
-      await browser.execute(() =>
+      await browser.execute(() => {
+        sessionStorage.clear();
         sessionStorage.setItem(
           'devopsrockstars.store.cart',
           JSON.stringify([{variantId: 'hat-5950-7-1-4', quantity: 1}])
-        )
-      );
+        );
+      });
       await BasePage.openStaging('store/checkout');
       await BasePage.waitForAppReady();
       await (await browser.$('input[name="address-line1"]')).waitForDisplayed();
