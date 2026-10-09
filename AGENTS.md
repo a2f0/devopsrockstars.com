@@ -21,27 +21,16 @@ Use `-R "$REPO"` (or `--repo "$REPO"`) on `gh` commands when ambiguity is possib
 - Do not force-push unless explicitly requested.
 - Do not add AI attribution/co-author footers.
 
-## PR Review Thread Replies (Critical)
+## Review Feedback (Critical)
 
-When addressing Gemini or reviewer feedback:
-
-- Always reply inside the original review thread.
-- Never use top-level PR comments for review feedback replies.
-- Never use `gh pr review` to reply to individual review comments.
-- Use the PR comment reply endpoint:
-  - `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies`
-- Tag `@gemini-code-assist` in replies intended for Gemini.
-- Include what changed and the commit SHA when relevant.
-
-## Addressing Gemini Feedback Workflow
-
-1. Determine repo and PR number for the current branch.
-2. Fetch unresolved review threads (`reviewThreads`) and prioritize Gemini comments.
-3. Implement fixes scoped to valid feedback.
-4. Run relevant validation (`bun run compile`, `bun run unit`, `bun run ci-headless` as needed).
-5. Commit and push.
-6. Reply in each addressed thread via the REST reply endpoint.
-7. Resolve threads only when fully addressed.
+Fix valid findings from pull request review comments, scoped to the feedback,
+and run the relevant validation (`bun run compile`, `bun run unit`,
+`bun run ci-headless` as needed) before committing and pushing. Then reply in
+each original review thread through
+`POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies`,
+saying what changed and naming the fixing commit. Never reply with top-level PR
+comments or `gh pr review`. Resolve a thread only when its finding is fully
+addressed.
 
 ## Repo Validation Commands
 
@@ -53,9 +42,8 @@ required CI policy. Dependency maintenance follows the shared
 [deployment preview policy](docs/dependency-maintenance.md). Update installed
 skills with `bun run agents:sync` after changing the dependency pin, and check
 them with `bun run agents:check`. Do not edit managed skills locally.
-The project `address-gemini-feedback` skill handles review-thread replies;
-`scripts/check-agent-skills-in-sync.mjs` keeps project skills identical between
-`.agents/skills` and `.claude/skills` through the pre-commit hook.
+`scripts/check-agent-skills-in-sync.mjs` keeps skills present in both
+`.agents/skills` and `.claude/skills` identical through the pre-commit hook.
 
 Primary checks in this repo:
 
@@ -90,13 +78,12 @@ The Home skyline renders with the frontend's `three` through
 when updating either; the staging browser tests fail if the viewer loads its
 own copy.
 
-For Codex use Claude as the independent reviewer, falling back to the independent
-Codex CLI if unavailable. Require a complete non-blocking verdict on the final
-commit. Validate, commit, and re-review repairs until findings are addressed.
+Review with an agent other than the one that wrote the change: Codex from
+Claude Code, Claude from Codex, then the remaining CLIs, reporting any fallback.
+Require a complete non-blocking verdict on the final commit. Validate, commit, and re-review repairs until findings are addressed.
 Report the reviewer, fallback, verdict, repair count, and reviewed commit.
 
-Allow Gemini at least 60 seconds after opening or updating a PR, then fetch
-unresolved review threads and follow the reply rules above. Use the shared
+Handle review comments on the PR with the reply rules above. Use the shared
 exact-head squash helper; invoke `node_modules/.bin/agent-tool pr merge` directly
 when passing an empty subject because `bun run` drops empty arguments. Per
 `agent-tool.json`, it requires `code-quality` from `Github Actions` on the
