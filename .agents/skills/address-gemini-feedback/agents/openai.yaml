@@ -1,8 +1,0 @@
----
-interface:
-  display_name: "Address Gemini Feedback"
-  short_description: "Resolve Gemini PR comments and reply in-thread."
-  default_prompt: >-
-    Address unresolved Gemini review feedback in the current PR.
-    Apply fixes, validate changes, and push commits.
-    Reply in each review thread.
