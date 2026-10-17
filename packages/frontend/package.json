@@ -1,6 +1,6 @@
 {
   "name": "@devopsrockstars/frontend",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -16,20 +16,20 @@
   },
   "devDependencies": {
     "@types/three": "0.186.0",
-    "expect-webdriverio": "7.0.1",
-    "webdriverio": "9.32.0"
+    "expect-webdriverio": "8.0.0",
+    "webdriverio": "10.0.2"
   },
   "dependencies": {
-    "@a2f0/skyline": "0.2.24",
+    "@a2f0/skyline": "0.2.27",
     "@devopsrockstars/shared-types": "workspace:*",
-    "@stripe/stripe-js": "10.0.0",
+    "@stripe/stripe-js": "10.1.0",
     "leaflet": "1.9.4",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-leaflet": "5.0.0",
     "react-router": "8.4.0",
-    "react-svg": "19.1.6",
-    "styled-components": "6.5.3",
+    "react-svg": "19.2.1",
+    "styled-components": "6.6.0",
     "three": "0.186.1"
   }
 }

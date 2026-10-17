@@ -31,8 +31,19 @@ a reported coverage limit, never a reason to downgrade newer installed versions.
   scripts do not import its removed JavaScript compiler API; Knip uses Oxc
   analysis. Compile and actual Knip checks must pass before shipping.
 - Preserve `expect@30.5.2.patch` for Bun's CommonJS interoperability and
-  `miniflare@5.20261001.0-alpha.patch` for its installed Undici transport.
+  `miniflare@5.20261012.1-beta.patch` for its installed Undici transport.
   Remove either only after the actual browser/Worker regressions pass unpatched.
+- Keep the store Worker's `upload_source_maps: false` explicit and checked by
+  the deployment guard. [Wrangler 4.150](https://github.com/cloudflare/workers-sdk/releases/tag/wrangler%404.150.0)
+  enables uploads by default; tool updates must preserve the existing policy.
+- WebdriverIO 10 and expect-webdriverio 8 must move together. Use
+  `setDefaultOptions` and selectors that identify a single element; strict `$`
+  checks expose ambiguous selectors. Chrome does not yet implement every BiDi
+  override used by device presets; the mobile suites use CDP viewport and touch
+  emulation, assert the effective metrics, and restore them afterward.
+  Validate fresh driver downloads and the
+  full software-rendered browser suite under pinned Bun. See the
+  [migration guide](https://webdriver.io/docs/v10-migration).
 - Keep CI's exact pre-commit pin and Python line compatible. Changing the
   interpreter needs actual hook environment validation.
 
@@ -63,16 +74,11 @@ patch when upstream preserves those options and the CLI regression passes
 unpatched. Repository maintainers review both by **2026-11-07** or on either
 owner's next upgrade, whichever comes first.
 
-The following owner constraints were recorded in PR #841's 2026-10-07 audit and
-still describe the committed lockfile. They are active holds to revisit, not a
-fresh advisory inventory; recheck current advisories and owner releases during
-each upgrade.
+The following owner constraints need compatible upstream fixes. Recheck current
+advisories and owner releases during each upgrade.
 
 | Locked dependency | Owning path and exposure | Fix or hold |
 | --- | --- | --- |
-| Sharp 0.35.4 | Wrangler 4.147 → Miniflare 5.20261001 alpha; native SVG decoder in local Worker tooling | [GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w), high; fixed in 0.35.5 with librsvg 2.63.2, but forcing a new native decoder into Miniflare lacks a validated owner update and native compatibility proof. |
-| Basic-FTP 5.3.1 | WebdriverIO 9.32 → Puppeteer Browsers 2.13.2 → proxy-agent → get-uri 6.0.5; browser-download proxy tooling | [GHSA-c475-qrg2-pj4r](https://github.com/advisories/GHSA-c475-qrg2-pj4r), high; fixed in 6.2.1. Owner pins and browser compatibility need a validated upgrade. |
-| Extract-ZIP 2.0.1 | WebdriverIO → Puppeteer Browsers 2.13.2; downloaded browser archive extraction | [GHSA-jmr9-qjv8-65gv](https://github.com/advisories/GHSA-jmr9-qjv8-65gv) and [GHSA-7pqw-9j4j-h8q3](https://github.com/advisories/GHSA-7pqw-9j4j-h8q3), high; neither advisory lists a patched version. |
 | Braces 3.0.3 | Markdownlint CLI2 → Micromatch 4.0.8; repository-controlled glob patterns | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), high; no published fix listed. Do not feed untrusted patterns into this tooling. |
 | KaTeX 0.16.47 | Markdownlint → Micromark Math 3.1; Markdown tooling, outside the deployed app | [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7), low; fixed in 0.18.2. Exploitation requires existing prototype pollution; the pinned owner needs tested compatibility before replacing its renderer. |
 

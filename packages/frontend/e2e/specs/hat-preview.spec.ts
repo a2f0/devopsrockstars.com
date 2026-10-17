@@ -579,8 +579,27 @@ describe('3D hat preview', () => {
       height: innerHeight,
       devicePixelRatio,
     }));
-    const restoreDevice = await browser.emulate('device', 'iPhone 12');
     try {
+      // Chrome does not implement every BiDi override used by WDIO's device
+      // preset. Use the same CDP mobile emulation as the layout suite.
+      await browser.sendCommand('Emulation.setDeviceMetricsOverride', {
+        width: 390,
+        height: 844,
+        deviceScaleFactor: 3,
+        mobile: true,
+      });
+      await browser.sendCommand('Emulation.setTouchEmulationEnabled', {
+        enabled: true,
+        maxTouchPoints: 5,
+      });
+      assert.deepEqual(
+        await browser.execute(() => ({
+          width: innerWidth,
+          density: devicePixelRatio,
+          touchPoints: navigator.maxTouchPoints,
+        })),
+        {width: 390, density: 3, touchPoints: 5}
+      );
       await expect(canvas).toBeDisplayed();
       const beforeTouch = await snapshot();
       await browser
@@ -597,9 +616,11 @@ describe('3D hat preview', () => {
         )
       );
     } finally {
-      await restoreDevice();
-      // WebdriverIO restores its Desktop Chrome preset, not the viewport
-      // from before emulation. Pixel comparisons need the original layout.
+      await browser.sendCommand('Emulation.clearDeviceMetricsOverride', {});
+      await browser.sendCommand('Emulation.setTouchEmulationEnabled', {
+        enabled: false,
+      });
+      // Pixel comparisons need the original layout and display density.
       await browser.setViewport(viewport);
     }
 

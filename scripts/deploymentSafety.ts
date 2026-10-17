@@ -133,6 +133,7 @@ export async function deploymentTarget(
     keys(config, [
       '$schema',
       'main',
+      'upload_source_maps',
       'compatibility_date',
       'triggers',
       'observability',
@@ -165,6 +166,11 @@ export async function deploymentTarget(
         ? 'https://staging.devopsrockstars.com'
         : 'https://devopsrockstars.com,https://www.devopsrockstars.com';
     if (workspace === 'backend') {
+      equal(
+        config['upload_source_maps'],
+        false,
+        'Worker source-map upload policy'
+      );
       equal(selected['vars'], {STOREFRONT_ORIGINS: origins}, 'store origins');
       bindings.push({
         name: 'STOREFRONT_ORIGINS',

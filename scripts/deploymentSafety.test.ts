@@ -771,3 +771,26 @@ test('uninspected Wrangler build hooks are rejected', async () => {
     await rm(temporary, {recursive: true, force: true});
   }
 });
+
+test.each([true, undefined])(
+  'Worker source-map uploads cannot be enabled or left to a tool default (%s)',
+  async uploadSourceMaps => {
+    const {temporary, repository} = await committedFixture();
+    try {
+      const filename = path.join(repository, 'packages/backend/wrangler.jsonc');
+      const config = Bun.JSONC.parse(await Bun.file(filename).text()) as Record<
+        string,
+        unknown
+      >;
+      config['upload_source_maps'] = uploadSourceMaps;
+      await Bun.write(filename, JSON.stringify(config));
+      for (const environment of ['staging', 'prod'] as const) {
+        await expect(deploymentTarget(repository, environment)).rejects.toThrow(
+          'Worker source-map upload policy'
+        );
+      }
+    } finally {
+      await rm(temporary, {recursive: true, force: true});
+    }
+  }
+);

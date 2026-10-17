@@ -1,8 +1,8 @@
 diff --git a/dist/src/index.js b/dist/src/index.js
-index 9c796678eba8b70a4890f5e8ddb9f43cc6784c67..e2f7525b56f19dab2752cec89375f32849d822e7 100644
+index 6eec3456a8534828f2951074b1a212ed2acda92a..d874f3b3be2e74f818f47b6c22adf1db259b1f07 100644
 --- a/dist/src/index.js
 +++ b/dist/src/index.js
-@@ -53522,7 +53522,7 @@ var bgWhite = init(47, 49);
+@@ -58849,7 +58849,7 @@ var bgWhite = init(47, 49);
  
  // src/index.ts
  var import_stoppable = __toESM(require_stoppable());
@@ -11,7 +11,7 @@ index 9c796678eba8b70a4890f5e8ddb9f43cc6784c67..e2f7525b56f19dab2752cec89375f328
  
  // embed-worker:/Users/runner/work/workers-sdk/workers-sdk/packages/miniflare/src/workers/core/dev-registry-proxy.worker.ts
  var import_fs = __toESM(require("fs"));
-@@ -68082,7 +68082,7 @@ var import_node_assert = __toESM(require("node:assert"));
+@@ -78563,7 +78563,7 @@ var import_node_assert = __toESM(require("node:assert"));
  var import_node_fs2 = require("node:fs");
  var import_promises = require("node:fs/promises");
  var import_node_path = __toESM(require("node:path"));
@@ -20,7 +20,7 @@ index 9c796678eba8b70a4890f5e8ddb9f43cc6784c67..e2f7525b56f19dab2752cec89375f328
  function getDefaultCfPath() {
    const miniflareCacheDir = process.env.MINIFLARE_CACHE_DIR;
    if (miniflareCacheDir) {
-@@ -79088,11 +79088,11 @@ function exitHook(callback) {
+@@ -89582,11 +89582,11 @@ function exitHook(callback) {
  
  // src/http/fetch.ts
  var import_node_assert6 = __toESM(require("node:assert"));
@@ -34,7 +34,7 @@ index 9c796678eba8b70a4890f5e8ddb9f43cc6784c67..e2f7525b56f19dab2752cec89375f328
  var kCf = /* @__PURE__ */ Symbol("kCf");
  var Request = class _Request extends import_undici2.Request {
    // We should be able to use a private `#cf` property here instead of a symbol
-@@ -79119,7 +79119,7 @@ var Request = class _Request extends import_undici2.Request {
+@@ -89613,7 +89613,7 @@ var Request = class _Request extends import_undici2.Request {
  };
  
  // src/http/response.ts
@@ -43,7 +43,7 @@ index 9c796678eba8b70a4890f5e8ddb9f43cc6784c67..e2f7525b56f19dab2752cec89375f328
  var kWebSocket = /* @__PURE__ */ Symbol("kWebSocket");
  var Response2 = class _Response extends import_undici3.Response {
    // We should be able to use a private `#webSocket` property here instead of a
-@@ -79998,7 +79998,7 @@ function getAccessibleHosts(ipv4Only = false) {
+@@ -90521,7 +90521,7 @@ function getAccessibleHosts(ipv4Only = false) {
  }
  
  // src/http/index.ts
@@ -52,7 +52,7 @@ index 9c796678eba8b70a4890f5e8ddb9f43cc6784c67..e2f7525b56f19dab2752cec89375f328
  
  // src/plugins/shared/index.ts
  var import_node_crypto6 = require("node:crypto");
-@@ -83696,7 +83696,7 @@ var path15 = __toESM(require("node:path"), 1);
+@@ -94138,7 +94138,7 @@ var path14 = __toESM(require("node:path"), 1);
  var import_node_path9 = __toESM(require("node:path"), 1);
  var import_node_util3 = require("node:util");
  var import_node_url2 = require("node:url");
@@ -61,16 +61,7 @@ index 9c796678eba8b70a4890f5e8ddb9f43cc6784c67..e2f7525b56f19dab2752cec89375f328
  var import_node_child_process2 = require("node:child_process");
  var import_node_crypto = require("node:crypto");
  var import_node_os6 = require("node:os");
-@@ -109997,7 +109997,7 @@ const { workerData } = require("worker_threads");
- // Not using parentPort here so we can call receiveMessageOnPort() in host
- const { notifyHandle, port, filename } = workerData;
- 
--// When running Miniflare from Jest, regular 'require("undici")' will fail here
-+// When running Miniflare from Jest, regular 'require(require.resolve("undici/package.json").replace(/package\.json$/, "index.js"))' will fail here
- // with "Error: Cannot find module 'undici'". Instead we need to create a
- // 'require' using the '__filename' of the host... :(
- const actualRequire = createRequire(filename);
-@@ -110133,7 +110133,7 @@ var SynchronousFetcher = class {
+@@ -120206,7 +120206,7 @@ var SynchronousFetcher = class {
  var import_node_buffer5 = require("node:buffer");
  var import_consumers = require("node:stream/consumers");
  var import_web3 = require("node:stream/web");

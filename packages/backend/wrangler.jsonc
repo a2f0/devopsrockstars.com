@@ -1,6 +1,7 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "main": "./src/index.ts",
+  "upload_source_maps": false,
   "compatibility_date": "2026-08-31",
   "triggers": {
     "crons": ["* * * * *"]

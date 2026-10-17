@@ -1,4 +1,4 @@
-import {expect, setOptions} from 'expect-webdriverio';
+import {expect, setDefaultOptions} from 'expect-webdriverio';
 import {remote} from 'webdriverio';
 
 export {expect};
@@ -26,7 +26,7 @@ export async function startBrowser() {
       },
     },
   });
-  setOptions({wait: 10000, interval: 100});
+  setDefaultOptions({wait: 10000, interval: 100});
 }
 
 export async function stopBrowser() {

@@ -132,7 +132,7 @@ Do not create GitHub issues unless the user explicitly requests it.
 ### Setup and Installation
 
 ```bash
-pip install pre-commit==4.6.2
+pip install pre-commit==4.7.0
 pre-commit install
 bun install
 ```
@@ -178,7 +178,7 @@ bun run --cwd packages/frontend test \
 
 ## Package Management
 
-This project uses **Bun 1.4.2** for package management, TypeScript execution,
+This project uses **Bun 1.4.3** for package management, TypeScript execution,
 bundling, development servers, and unit/browser test execution. The version is
 pinned in `.bun-version` and `package.json`; CI installs that same version.
 
@@ -288,7 +288,7 @@ D1 database.
 - `bun run deploy:staging` and `bun run deploy:prod` wrap `scripts/deploy.ts`,
   which builds the site, dry-runs both Workers, verifies live resource identities
   and zero pending D1 migrations, then publishes the store and site Workers
-- `patches/miniflare@5.20261001.0-alpha.patch` resolves Miniflare's installed
+- `patches/miniflare@5.20261012.1-beta.patch` resolves Miniflare's installed
   Undici transport to avoid Bun's incomplete built-in dispatcher
 - Wrangler owns Worker and asset deployments; Terraform (`terraform/`) owns the
   custom domains, including `www` (which serves the production site)

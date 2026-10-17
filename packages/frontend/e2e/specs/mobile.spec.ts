@@ -210,7 +210,9 @@ describe('mobile layouts', () => {
         const size = await browser.$('[role="combobox"]');
         await expect(size).toBeEnabled();
         await size.click();
-        const option = await browser.$('[role="option"]');
+        const option = await browser.$(
+          '[role="listbox"] > [role="option"]:first-child'
+        );
         await expect(option).toBeDisplayed();
         assert.ok((await option.getSize()).height >= 44);
         await option.click();

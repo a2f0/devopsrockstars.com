@@ -1,6 +1,6 @@
 # DevOps Rockstars
 
-Use Bun **1.4.2** (see `.bun-version`) for all workspace commands. TypeScript
+Use Bun **1.4.3** (see `.bun-version`) for all workspace commands. TypeScript
 **7.0.2** checks types; Bun transpiles and bundles the application. Install Bun
 from [bun.sh](https://bun.sh), then run `bun install`. Commit `bun.lock` with
 dependency changes. Development rebuilds on source edits; refresh the browser
@@ -29,7 +29,7 @@ active constraints, and security override removal conditions.
 ## Development
 
 ```shell
-pip install pre-commit==4.6.2
+pip install pre-commit==4.7.0
 pre-commit install
 bun install
 bun run start-server

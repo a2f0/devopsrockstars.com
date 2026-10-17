@@ -60,7 +60,7 @@ test('the Markdownlint override resolves only the patched Smol-TOML', async () =
       );
   expect(resolved.length).toBeGreaterThan(0);
   expect(resolved.map(([, entry]) => entry[0])).toEqual(
-    resolved.map(() => 'smol-toml@1.9.0')
+    resolved.map(() => 'smol-toml@1.9.1')
   );
 });
 
